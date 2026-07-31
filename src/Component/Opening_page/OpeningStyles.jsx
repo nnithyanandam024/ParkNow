@@ -1,0 +1,123 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  logoIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#1D64C6',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  logoP: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F448C',
+  },
+  illustrationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    maxHeight: 320,
+  },
+  illustration: {
+    width: '100%',
+    height: '100%',
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1A1D20',
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 10,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D1D5DB',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    width: 16,
+    backgroundColor: '#1D64C6',
+  },
+  actionContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  primaryButton: {
+    backgroundColor: '#1D64C6',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#1D64C6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#6B7280',
+  },
+  secondaryButtonText: {
+    color: '#1D64C6',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 10,
+  },
+});
