@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
@@ -16,22 +16,22 @@ export const styles = StyleSheet.create({
     paddingBottom: 14,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#E2E8F0',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
   },
 
   /* ───── Scroll Area ───── */
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 80,
+    paddingBottom: Platform.OS === 'ios' ? 160 : 130,
   },
 
   /* ───── Summary Card ───── */
@@ -41,12 +41,18 @@ export const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   summaryTopRow: {
     flexDirection: 'row',
@@ -61,12 +67,12 @@ export const styles = StyleSheet.create({
   parkingName: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     marginBottom: 4,
   },
   slotDetails: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '600',
   },
   totalCol: {
@@ -74,15 +80,16 @@ export const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#9CA3AF',
+    fontWeight: '800',
+    color: '#94A3B8',
     letterSpacing: 0.5,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   totalValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   timeRow: {
     flexDirection: 'row',
@@ -91,12 +98,12 @@ export const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 13,
-    color: '#4B5563',
+    color: '#64748B',
     fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#F1F5F9',
     marginBottom: 14,
   },
   spotRow: {
@@ -112,7 +119,7 @@ export const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#1A5FB4',
+    backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -124,17 +131,19 @@ export const styles = StyleSheet.create({
   },
   spotLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#1E293B',
   },
   confirmedBadge: {
-    backgroundColor: '#E8F8EE',
+    backgroundColor: '#DCFCE7',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   confirmedText: {
-    color: '#0F7336',
+    color: '#16A34A',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -142,11 +151,12 @@ export const styles = StyleSheet.create({
   /* ───── Payment Section Title ───── */
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
-    letterSpacing: 0.8,
+    fontWeight: '800',
+    color: '#334155',
+    letterSpacing: 1,
     marginBottom: 12,
     paddingLeft: 4,
+    textTransform: 'uppercase',
   },
 
   /* ───── Payment Options ───── */
@@ -162,17 +172,27 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     borderWidth: 1.5,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
-    elevation: 1,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   paymentOptionSelected: {
-    borderColor: '#1A5FB4',
-    shadowColor: '#1A5FB4',
-    shadowOpacity: 0.05,
+    borderColor: '#0052cc',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOpacity: 0.08,
+      },
+    }),
   },
   optionLeft: {
     flexDirection: 'row',
@@ -182,27 +202,28 @@ export const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   optionTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 2,
   },
   optionSubtitle: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
+    fontWeight: '500',
   },
   radioOutline: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: '#CBD5E1',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -210,7 +231,7 @@ export const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#1A5FB4',
+    backgroundColor: '#0052cc',
   },
 
   /* ───── Security Container ───── */
@@ -226,63 +247,82 @@ export const styles = StyleSheet.create({
   },
   securityTitle: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#0F7336',
+    fontWeight: '800',
+    color: '#16A34A',
   },
   securitySubtitle: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 15,
+    fontWeight: '500',
   },
 
-  /* ───── Footer Bar ───── */
+  /* ───── Footer Bar (Positioned ABOVE BottomTabBar) ───── */
   footerBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'ios' ? 88 : 74,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#E2E8F0',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    paddingBottom: 12,
+    zIndex: 90,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   payableCol: {
     flex: 1,
   },
   payableLabel: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: '#64748B',
+    fontWeight: '600',
     marginBottom: 2,
   },
   payableValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
   },
   payButton: {
-    backgroundColor: '#1A5FB4',
-    borderRadius: 28,
+    backgroundColor: '#0052cc',
+    borderRadius: 20,
     paddingVertical: 14,
     paddingHorizontal: 28,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   payButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

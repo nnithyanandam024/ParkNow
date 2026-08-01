@@ -5,8 +5,8 @@ import { styles } from './BottomTabBarStyles';
 
 const BottomTabBar = ({ activeTab, setActiveTab }) => {
   const tabs = [
-    { id: 'Home', label: 'Home', icon: 'home' },
-    { id: 'Bookings', label: 'Bookings', icon: 'calendar' },
+    { id: 'Home', label: 'Home', icon: 'grid' },
+    { id: 'Bookings', label: 'Bookings', icon: 'clipboard' },
     { id: 'Profile', label: 'Profile', icon: 'user' },
   ];
 
@@ -17,20 +17,20 @@ const BottomTabBar = ({ activeTab, setActiveTab }) => {
         return (
           <TouchableOpacity
             key={tab.id}
-            style={styles.tabItem}
+            style={isActive ? styles.activeTabItem : styles.tabItem}
             activeOpacity={0.8}
             onPress={() => setActiveTab(tab.id)}
           >
-            <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
-              <FeatherIcon
-                name={tab.icon}
-                size={20}
-                color={isActive ? '#1A5FB4' : '#6B7280'}
-              />
-            </View>
-            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-              {tab.label}
-            </Text>
+            <FeatherIcon
+              name={tab.icon}
+              size={20}
+              color={isActive ? '#16A34A' : '#6B7280'}
+            />
+            {isActive ? (
+              <Text style={styles.activeTabLabel}>{tab.label}</Text>
+            ) : (
+              <Text style={styles.tabLabel}>{tab.label}</Text>
+            )}
           </TouchableOpacity>
         );
       })}

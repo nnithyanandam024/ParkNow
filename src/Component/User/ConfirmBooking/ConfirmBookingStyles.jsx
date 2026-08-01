@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
@@ -16,22 +16,22 @@ export const styles = StyleSheet.create({
     paddingBottom: 14,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#E2E8F0',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
   },
 
   /* ───── Scroll Area ───── */
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 80,
+    paddingBottom: Platform.OS === 'ios' ? 160 : 130,
   },
 
   /* ───── Cards ───── */
@@ -41,12 +41,18 @@ export const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 
   /* Destination Details */
@@ -58,38 +64,42 @@ export const styles = StyleSheet.create({
   },
   cardLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#1A5FB4',
+    fontWeight: '800',
+    color: '#0052cc',
     letterSpacing: 0.8,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   destTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     lineHeight: 24,
   },
   pBadge: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#E6EFFD',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   pBadgeText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   destAddress: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
     lineHeight: 16,
+    fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#F1F5F9',
     marginVertical: 14,
   },
   metaRow: {
@@ -102,21 +112,23 @@ export const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontWeight: '700',
+    color: '#94A3B8',
     marginBottom: 4,
   },
   metaValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
 
   /* Date & Time Container */
   dateTimeContainer: {
-    backgroundColor: '#F4F6F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 14,
     padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   dateTimeRow: {
     flexDirection: 'row',
@@ -126,20 +138,21 @@ export const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#E6EFFD',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
   dateTimeLabel: {
     fontSize: 9,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontWeight: '700',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
   },
   dateTimeValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: '#1E293B',
   },
 
   /* Vehicle Card */
@@ -155,28 +168,28 @@ export const styles = StyleSheet.create({
   },
   cardHeaderTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
   },
   changeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   vehicleDetailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#EEF2F6',
+    borderColor: '#E2E8F0',
   },
   carIconContainer: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#E6EFFD',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -184,12 +197,13 @@ export const styles = StyleSheet.create({
   licensePlate: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     marginBottom: 2,
   },
   vehicleModel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
+    fontWeight: '500',
   },
 
   /* Price Card */
@@ -201,48 +215,51 @@ export const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 13,
-    color: '#4B5563',
+    color: '#64748B',
+    fontWeight: '500',
   },
   priceValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#1A1D20',
+    fontWeight: '700',
+    color: '#0F172A',
   },
   promoLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0F7336',
+    fontWeight: '700',
+    color: '#16A34A',
   },
   promoValue: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#0F7336',
+    fontWeight: '700',
+    color: '#16A34A',
   },
   dashedDivider: {
     borderWidth: 0.5,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     borderStyle: 'dashed',
     marginVertical: 10,
   },
   totalLabel: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
   },
   totalValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   paymentMethodRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F3F5F8',
-    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   paymentLeft: {
     flexDirection: 'row',
@@ -263,8 +280,8 @@ export const styles = StyleSheet.create({
   },
   cardDigits: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#1E293B',
   },
 
   /* Notice Row */
@@ -277,39 +294,45 @@ export const styles = StyleSheet.create({
   noticeText: {
     flex: 1,
     fontSize: 11,
-    color: '#6B7280',
+    color: '#64748B',
     lineHeight: 15,
+    fontWeight: '500',
   },
 
-  /* Footer Button Container */
+  /* Floating Action Button Container (Transparent Background) */
   footerButtonContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'ios' ? 88 : 74,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    paddingTop: 4,
+    paddingBottom: 4,
+    zIndex: 90,
   },
   confirmButton: {
-    backgroundColor: '#1A5FB4',
-    borderRadius: 28,
-    paddingVertical: 16,
+    backgroundColor: '#0052cc',
+    borderRadius: 20,
+    paddingVertical: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   confirmButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#E2E8F0',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -28,13 +28,15 @@ export const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   avatarImage: {
     width: '100%',
@@ -47,7 +49,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBF0F5',
+    borderBottomColor: '#E2E8F0',
   },
   tab: {
     flex: 1,
@@ -57,30 +59,30 @@ export const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#1A5FB4',
+    borderBottomColor: '#0052cc',
   },
   tabText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: '700',
+    color: '#64748B',
   },
   tabTextActive: {
-    color: '#1A5FB4',
-    fontWeight: '700',
+    color: '#0052cc',
+    fontWeight: '800',
   },
 
   /* ───── Scroll Content ───── */
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#4B5563',
-    letterSpacing: 0.5,
-    backgroundColor: '#E5E7EB',
+    fontWeight: '800',
+    color: '#334155',
+    letterSpacing: 1,
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
@@ -92,16 +94,22 @@ export const styles = StyleSheet.create({
   /* ───── Booking Cards ───── */
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   cardTop: {
     flexDirection: 'row',
@@ -111,8 +119,8 @@ export const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
     flex: 1,
     marginRight: 8,
   },
@@ -121,29 +129,33 @@ export const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   badgeConfirmed: {
-    backgroundColor: '#E8F8EE',
+    backgroundColor: '#DCFCE7',
+    borderColor: '#A7F3D0',
   },
   badgeFinished: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
   },
   badgeCancelled: {
     backgroundColor: '#FEE2E2',
+    borderColor: '#FECACA',
   },
   badgeTextConfirmed: {
-    color: '#0F7336',
+    color: '#16A34A',
     fontSize: 11,
     fontWeight: '700',
   },
   badgeTextFinished: {
-    color: '#4B5563',
+    color: '#64748B',
     fontSize: 11,
     fontWeight: '700',
   },
   badgeTextCancelled: {
-    color: '#B91C1C',
+    color: '#EF4444',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -156,14 +168,14 @@ export const styles = StyleSheet.create({
   },
   dateTimeText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: '#64748B',
+    fontWeight: '600',
     marginLeft: 6,
   },
 
   cardDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     marginBottom: 14,
   },
 
@@ -176,33 +188,33 @@ export const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   priceFinished: {
-    color: '#1A1D20',
+    color: '#0F172A',
   },
   priceCancelled: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
     textDecorationLine: 'line-through',
   },
 
   /* Details Buttons */
   viewDetailsBtn: {
     borderWidth: 1.5,
-    borderColor: '#1A5FB4',
+    borderColor: '#0052cc',
     borderRadius: 20,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 6,
   },
   viewDetailsBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   viewDetailsBtnFinished: {
-    borderColor: '#9CA3AF',
+    borderColor: '#CBD5E1',
   },
   viewDetailsBtnTextFinished: {
-    color: '#6B7280',
+    color: '#64748B',
   },
 });

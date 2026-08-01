@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Search Header ───── */
@@ -11,15 +11,16 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 40 : 8,
+    paddingTop: Platform.OS === 'android' ? 40 : 12,
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#E2E8F0',
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -28,16 +29,19 @@ export const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 14,
-    color: '#111827',
+    color: '#0F172A',
+    fontWeight: '600',
     padding: 0,
   },
   filterBtn: {
@@ -50,7 +54,7 @@ export const styles = StyleSheet.create({
 
   /* ───── List Content ───── */
   listContent: {
-    paddingBottom: 32,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
   },
 
   /* ───── Recent Searches ───── */
@@ -58,26 +62,29 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#334155',
+    letterSpacing: 1,
     marginBottom: 12,
+    textTransform: 'uppercase',
   },
   recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   recentIcon: {
     marginRight: 12,
   },
   recentText: {
     fontSize: 14,
-    color: '#374151',
+    fontWeight: '600',
+    color: '#1E293B',
   },
 
   /* ───── Filter Chips ───── */
@@ -89,17 +96,20 @@ export const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 18,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   chipActive: {
-    backgroundColor: '#1A1D20',
+    backgroundColor: '#0052cc',
+    borderColor: '#0052cc',
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#64748B',
   },
   chipTextActive: {
     color: '#FFFFFF',
@@ -112,35 +122,50 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 12,
+    marginTop: 10,
   },
   nearbyTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
     flex: 1,
   },
   viewMapText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#1A5FB4',
+    fontWeight: '700',
+    color: '#0052cc',
   },
 
   /* ───── Parking Card ───── */
   parkingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 
   /* Map Thumbnail */
   mapThumbnail: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
     overflow: 'hidden',
     marginRight: 14,
     justifyContent: 'center',
@@ -151,14 +176,14 @@ export const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EEF2F7',
+    backgroundColor: '#EFF6FF',
   },
   mapPin: {
     position: 'absolute',
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#1A5FB4',
+    backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -170,15 +195,15 @@ export const styles = StyleSheet.create({
   },
   parkingName: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 3,
-    lineHeight: 20,
   },
   parkingAddress: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
     marginBottom: 6,
+    fontWeight: '500',
   },
   ratingRow: {
     flexDirection: 'row',
@@ -186,8 +211,8 @@ export const styles = StyleSheet.create({
   },
   ratingValue: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#1E293B',
     marginLeft: 4,
   },
 
@@ -199,35 +224,41 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: '#DCFCE7',
   },
   availabilityDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#22C55E',
-    marginRight: 5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16A34A',
+    marginRight: 4,
   },
   almostFullDot: {
     backgroundColor: '#F59E0B',
   },
   availabilityText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#22C55E',
+    fontWeight: '700',
+    color: '#16A34A',
   },
-  almostFullBadge: {},
+  almostFullBadge: {
+    backgroundColor: '#FEF3C7',
+  },
   almostFullText: {
     color: '#F59E0B',
   },
   priceText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0052cc',
   },
   priceUnit: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#64748B',
   },
 
   /* ───── Empty State ───── */
@@ -238,15 +269,16 @@ export const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: '800',
+    color: '#0F172A',
     marginTop: 16,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
+    fontWeight: '500',
   },
 });

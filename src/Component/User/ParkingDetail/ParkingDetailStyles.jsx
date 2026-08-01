@@ -5,7 +5,7 @@ const { width } = Dimensions.get('window');
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
@@ -18,20 +18,22 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
   headerBtn: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
   },
   headerRight: {
     flexDirection: 'row',
@@ -39,14 +41,14 @@ export const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: Platform.OS === 'ios' ? 180 : 150,
   },
 
   /* ───── Image Carousel ───── */
   imageCarousel: {
     width: '100%',
     height: 200,
-    backgroundColor: '#E8EDF3',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -56,8 +58,9 @@ export const styles = StyleSheet.create({
   },
   imagePlaceholderText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#64748B',
     marginTop: 8,
+    fontWeight: '500',
   },
   dotsRow: {
     flexDirection: 'row',
@@ -73,18 +76,19 @@ export const styles = StyleSheet.create({
     marginHorizontal: 3,
   },
   dotActive: {
-    backgroundColor: '#1A5FB4',
+    backgroundColor: '#0052cc',
     width: 20,
     borderRadius: 4,
   },
 
   /* ───── Name Section ───── */
   nameSection: {
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#E2E8F0',
   },
   nameRow: {
     flexDirection: 'row',
@@ -95,22 +99,24 @@ export const styles = StyleSheet.create({
   spotName: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     flex: 1,
     marginRight: 10,
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A5FB4',
+    backgroundColor: '#DCFCE7',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   ratingText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
+    color: '#16A34A',
     marginLeft: 4,
   },
   addressRow: {
@@ -119,8 +125,9 @@ export const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
     marginLeft: 6,
+    fontWeight: '500',
   },
 
   /* ───── Info Cards Grid ───── */
@@ -133,34 +140,45 @@ export const styles = StyleSheet.create({
   },
   infoCard: {
     width: (width - 48) / 2,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 14,
     margin: 4,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EEF2F7',
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   infoIconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EBF0FA',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   infoLabel: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontWeight: '800',
+    color: '#94A3B8',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
   },
 
   /* ───── Sections ───── */
@@ -169,9 +187,9 @@ export const styles = StyleSheet.create({
     paddingTop: 24,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 14,
   },
 
@@ -185,46 +203,47 @@ export const styles = StyleSheet.create({
     width: (width - 52) / 2,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#EEF2F7',
+    borderColor: '#E2E8F0',
   },
   amenityIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#EBF0FA',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
   amenityLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#1E293B',
     lineHeight: 16,
   },
 
   /* ───── Description ───── */
   descriptionBox: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#EEF2F7',
+    borderColor: '#E2E8F0',
   },
   descriptionText: {
     fontSize: 13,
-    color: '#4B5563',
+    color: '#64748B',
     lineHeight: 20,
+    fontWeight: '500',
   },
   readMore: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#1A5FB4',
+    fontWeight: '700',
+    color: '#0052cc',
     marginTop: 8,
   },
 
@@ -234,7 +253,7 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#EEF2F7',
+    borderColor: '#E2E8F0',
   },
   miniMap: {
     flex: 1,
@@ -247,44 +266,57 @@ export const styles = StyleSheet.create({
   },
   openMapText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#1A5FB4',
+    fontWeight: '700',
+    color: '#0052cc',
     marginLeft: 6,
   },
 
-  /* ───── Bottom Reserve Bar ───── */
+  /* ───── Bottom Reserve Bar (Positioned ABOVE BottomTabBar) ───── */
   bottomBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'ios' ? 88 : 68,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    paddingBottom: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 10,
+    borderTopColor: '#E2E8F0',
+    zIndex: 90,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   reserveButton: {
-    backgroundColor: '#1A5FB4',
-    borderRadius: 28,
+    backgroundColor: '#0052cc',
+    borderRadius: 20,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   reserveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.3,
   },
 });

@@ -3,294 +3,381 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 40 : (Platform.OS === 'ios' ? 44 : 14),
     paddingBottom: 14,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#E2E8F0',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
-    padding: 4,
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0052cc',
   },
-  menuButton: {
-    padding: 4,
-  },
-
-  /* ───── Level Selector Tabs ───── */
-  levelSelectorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
-  },
-  levelTab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#F3F5F8',
-  },
-  levelTabActive: {
-    backgroundColor: '#1A5FB4',
-  },
-  levelTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4B5563',
-  },
-  levelTabTextActive: {
-    color: '#FFFFFF',
-  },
-
-  /* ───── Legend ───── */
-  legendContainer: {
-    flexDirection: 'row',
+  avatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
-    gap: 24,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 6,
-  },
-  legendAvailable: {
-    backgroundColor: '#0F7336',
-  },
-  legendOccupied: {
-    backgroundColor: '#BCC2CD',
-  },
-  legendSelected: {
-    backgroundColor: '#1A5FB4',
-  },
-  legendText: {
-    fontSize: 13,
-    color: '#4B5563',
-    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
 
   /* ───── Scroll Area ───── */
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 100, // Leave room for absolute footer button
+    paddingBottom: Platform.OS === 'ios' ? 110 : 90,
   },
 
-  /* ───── Grid Container ───── */
-  gridContainer: {
-    backgroundColor: '#F3F5F8',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E6E9EE',
-    marginBottom: 20,
-  },
-  gridHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  sectorTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#4B5563',
-    letterSpacing: 0.5,
-  },
-  slotsLeftText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A5FB4',
-  },
-
-  /* ───── Parking Layout ───── */
-  parkingLayout: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  layoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  /* ───── Global Occupancy Card ───── */
+  occupancyCard: {
     width: '100%',
-    paddingHorizontal: 12,
-  },
-  slotBox: {
-    width: 90,
-    height: 100,
-    borderRadius: 14,
-    justifyContent: 'center',
+    backgroundColor: '#0052cc',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
     alignItems: 'center',
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  slotAvailable: {
-    backgroundColor: '#0F7336',
+  occupancySubtitle: {
+    color: '#D1E8F2',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
-  slotOccupied: {
-    backgroundColor: '#BCC2CD',
-  },
-  slotSelected: {
-    backgroundColor: '#1A5FB4',
-    borderColor: '#D4E2F4', // border highlight
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  slotIdText: {
-    fontSize: 13,
-    fontWeight: '700',
+  occupancyTitle: {
     color: '#FFFFFF',
-    marginBottom: 6,
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 12,
   },
-  slotIdOccupiedText: {
-    color: '#7C8491',
-  },
-
-  /* Driveway / Traffic indicators */
-  trafficIndicator: {
-    width: 50,
+  chipsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  drivewayLabelContainer: {
-    width: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
+  chip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginHorizontal: 4,
   },
-  drivewayText: {
-    fontSize: 9,
+  chipText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '700',
-    color: '#8E98A8',
-    letterSpacing: 1,
-    transform: [{ rotate: '-90deg' }],
   },
 
-  /* ───── Selected Summary Card ───── */
-  summaryCard: {
+  /* ───── Status Legend ───── */
+  legendTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#334155',
+    letterSpacing: 1,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  legendContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  legendRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    flexWrap: 'wrap',
   },
-  summaryLeft: {
+  legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: 4,
+    marginRight: 10,
   },
-  logoBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#D1E3FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  logoLetter: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1A5FB4',
-  },
-  summaryTextContent: {},
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1D20',
-    marginBottom: 3,
-  },
-  summarySubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  summaryRight: {
-    alignItems: 'flex-end',
-  },
-  summaryRate: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A5FB4',
-    marginBottom: 3,
-  },
-  summaryStatusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#0F7336',
-  },
-
-  /* ───── Footer Button Container ───── */
-  footerButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  continueButton: {
-    backgroundColor: '#1A5FB4',
-    borderRadius: 28,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  continueButtonDisabled: {
-    backgroundColor: '#A0BCE4',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     marginRight: 6,
   },
-  continueIcon: {
-    marginTop: 1,
+  legendLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '700',
+  },
+
+  /* ───── Section Header ───── */
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  filterBtnText: {
+    color: '#0052cc',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  /* ───── High-Density Spatial Grid Map ───── */
+  gridMapContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  topSlotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 12,
+  },
+  gridBodyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  verticalLane: {
+    width: '14.28%',
+    alignItems: 'center',
+  },
+  aislesContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 10,
+  },
+  aisleColumn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aisleSubCol: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  dividerDots: {
+    marginHorizontal: 4,
+    justifyContent: 'center',
+  },
+  dotsText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#CBD5E1',
+    letterSpacing: 2,
+  },
+
+  /* ───── Slot Cell States ───── */
+  slotCell: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  cellAvailable: {
+    borderColor: '#22C55E',
+    backgroundColor: '#F0FDF4',
+  },
+  cellOccupied: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  cellMaintenance: {
+    borderColor: '#94A3B8',
+    backgroundColor: '#F8FAFC',
+  },
+  cellSelected: {
+    borderColor: '#0052cc',
+    backgroundColor: '#0052cc',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  slotCellText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  bottomDecalsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 12,
+    paddingHorizontal: 12,
+  },
+
+  /* ───── Selected Slot Details Panel ───── */
+  detailsPanel: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 18,
+    minHeight: 140,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  detailsContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  detailsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  detailsSlotId: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  detailsMetadata: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  badgeAvailable: {
+    backgroundColor: '#DCFCE7',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  badgeTextAvailable: {
+    color: '#16A34A',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  confirmBtn: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#0052cc',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  confirmBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  detailsPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  placeholderText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: 260,
+    lineHeight: 18,
   },
 });

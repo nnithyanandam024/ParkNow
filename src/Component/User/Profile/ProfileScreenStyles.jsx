@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
@@ -16,17 +16,17 @@ export const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#E2E8F0',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logoBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: '#1A5FB4',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -39,7 +39,7 @@ export const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   editBtn: {
     padding: 6,
@@ -49,7 +49,7 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
   },
 
   /* ───── Avatar Section ───── */
@@ -67,34 +67,42 @@ export const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 52,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   cameraBtn: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1A5FB4',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2.5,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   userName: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     marginBottom: 4,
   },
   userMeta: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '600',
   },
 
@@ -105,29 +113,36 @@ export const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   cardLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#1A5FB4',
-    letterSpacing: 0.8,
+    fontWeight: '800',
+    color: '#334155',
+    letterSpacing: 1,
     marginBottom: 16,
+    textTransform: 'uppercase',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   infoIconBg: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F3F4F6',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -137,13 +152,13 @@ export const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '600',
+    color: '#94A3B8',
+    fontWeight: '700',
     marginBottom: 1,
   },
   infoValue: {
     fontSize: 14,
-    color: '#1A1D20',
+    color: '#0F172A',
     fontWeight: '700',
   },
 
@@ -163,21 +178,22 @@ export const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 15,
-    color: '#1A1D20',
+    color: '#0F172A',
     fontWeight: '600',
   },
   menuTextLogout: {
-    color: '#DC2626',
+    color: '#EF4444',
+    fontWeight: '700',
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
   },
 
   /* ───── App Version Footer ───── */
   appVersion: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontWeight: '700',
     letterSpacing: 0.5,
     textAlign: 'center',

@@ -3,7 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
   /* ───── Header ───── */
@@ -16,21 +16,21 @@ export const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#E2E8F0',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontWeight: '800',
+    color: '#0F172A',
   },
   avatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#6B7280',
+    backgroundColor: '#64748B',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -39,7 +39,7 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
     alignItems: 'center',
   },
 
@@ -49,12 +49,18 @@ export const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.03,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
     marginBottom: 24,
   },
 
@@ -70,18 +76,21 @@ export const styles = StyleSheet.create({
   },
   locationLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#9CA3AF',
+    fontWeight: '800',
+    color: '#94A3B8',
     letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   confirmedBadge: {
-    backgroundColor: '#E8F8EE',
+    backgroundColor: '#DCFCE7',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   confirmedText: {
-    color: '#0F7336',
+    color: '#16A34A',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -89,7 +98,7 @@ export const styles = StyleSheet.create({
   locationName: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     marginBottom: 20,
   },
   metaRow: {
@@ -99,14 +108,14 @@ export const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '500',
+    color: '#94A3B8',
+    fontWeight: '600',
     marginBottom: 4,
   },
   metaValue: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: '800',
+    color: '#1E293B',
   },
 
   /* Ticket Tear Cutout Line */
@@ -122,24 +131,24 @@ export const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
     marginLeft: -10,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
+    borderColor: '#E2E8F0',
   },
   rightCircleCutout: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
     marginRight: -10,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
+    borderColor: '#E2E8F0',
   },
   dashedLine: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     borderStyle: 'dashed',
     height: 1,
     marginHorizontal: 10,
@@ -162,7 +171,7 @@ export const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EEF2F6',
+    borderColor: '#E2E8F0',
   },
   qrWrapper: {
     width: 130,
@@ -176,7 +185,7 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     width: 26,
     height: 26,
-    borderColor: '#1A5FB4',
+    borderColor: '#0052cc',
   },
   topLeftBracket: {
     top: 10,
@@ -225,18 +234,18 @@ export const styles = StyleSheet.create({
     borderRadius: 2,
   },
   qrBlack: {
-    backgroundColor: '#1A1D20',
+    backgroundColor: '#0F172A',
   },
   qrCorner: {
     borderRadius: 3,
     borderWidth: 2,
-    borderColor: '#1A1D20',
+    borderColor: '#0F172A',
     backgroundColor: '#FFFFFF',
   },
   scanNotice: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: '#64748B',
+    fontWeight: '600',
     textAlign: 'center',
   },
 
@@ -245,11 +254,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F4F6F9',
+    backgroundColor: '#F8FAFC',
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     paddingVertical: 18,
     paddingHorizontal: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
   footerCol: {
     flex: 1,
@@ -257,20 +268,21 @@ export const styles = StyleSheet.create({
   },
   footerLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#9CA3AF',
+    fontWeight: '800',
+    color: '#94A3B8',
     letterSpacing: 0.5,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   footerValue: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0052cc',
   },
   footerDivider: {
     width: 1,
     height: 28,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: '#E2E8F0',
   },
 
   /* ───── Action Buttons ───── */
@@ -279,22 +291,28 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   navigateButton: {
-    backgroundColor: '#1A5FB4',
-    borderRadius: 28,
-    paddingVertical: 14,
+    backgroundColor: '#0052cc',
+    borderRadius: 20,
+    paddingVertical: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   navigateButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   secondaryButtonRow: {
     flexDirection: 'row',
@@ -307,13 +325,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingVertical: 12,
+    borderRadius: 20,
+    paddingVertical: 13,
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
+    borderColor: '#E2E8F0',
   },
   secondaryButtonText: {
-    color: '#4B5563',
+    color: '#334155',
     fontSize: 13,
     fontWeight: '700',
   },

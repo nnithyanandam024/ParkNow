@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   Text,
   View,
   TouchableOpacity,
@@ -53,13 +52,13 @@ const Payment = ({ parking, slotId, onBack, onPaySuccess }) => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color="#1A1D20" />
+          <Icon name="arrow-left" size={24} color="#0F172A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment</Text>
         <View style={{ width: 24 }} /> {/* spacer */}
@@ -80,7 +79,7 @@ const Payment = ({ parking, slotId, onBack, onPaySuccess }) => {
           </View>
 
           <View style={styles.timeRow}>
-            <Icon name="clock" size={14} color="#1A5FB4" style={{ marginRight: 6 }} />
+            <Icon name="clock" size={14} color="#0052cc" style={{ marginRight: 6 }} />
             <Text style={styles.timeText}>{durationHours} Hours • Today, 14:00 - 16:00</Text>
           </View>
 
@@ -116,7 +115,7 @@ const Payment = ({ parking, slotId, onBack, onPaySuccess }) => {
               >
                 <View style={styles.optionLeft}>
                   <View style={styles.iconCircle}>
-                    <Icon name={method.icon} size={18} color="#4B5563" />
+                    <Icon name={method.icon} size={18} color="#0052cc" />
                   </View>
                   <View>
                     <Text style={styles.optionTitle}>{method.title}</Text>
@@ -134,7 +133,7 @@ const Payment = ({ parking, slotId, onBack, onPaySuccess }) => {
         {/* Security Notice */}
         <View style={styles.securityContainer}>
           <View style={styles.securityTitleRow}>
-            <Icon name="shield" size={16} color="#0F7336" style={{ marginRight: 6 }} />
+            <Icon name="shield" size={16} color="#16A34A" style={{ marginRight: 6 }} />
             <Text style={styles.securityTitle}>Secure 256-bit SSL Encrypted</Text>
           </View>
           <Text style={styles.securitySubtitle}>
@@ -142,7 +141,7 @@ const Payment = ({ parking, slotId, onBack, onPaySuccess }) => {
           </Text>
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
 
       {/* Footer Bar */}
@@ -156,7 +155,7 @@ const Payment = ({ parking, slotId, onBack, onPaySuccess }) => {
           <Icon name="arrow-right" size={20} color="#FFFFFF" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

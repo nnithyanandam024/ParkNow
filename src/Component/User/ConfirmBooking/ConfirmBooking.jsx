@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  SafeAreaView,
   Text,
   View,
   TouchableOpacity,
@@ -27,13 +26,13 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
   const totalPrice = baseRateTotal - promoDiscount + serviceFee;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color="#1A1D20" />
+          <Icon name="arrow-left" size={24} color="#0F172A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Confirm Booking</Text>
         <View style={{ width: 24 }} /> {/* spacer to align title */}
@@ -52,7 +51,7 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
             </View>
           </View>
           <Text style={styles.destAddress}>
-            <Icon name="map-pin" size={12} color="#6B7280" /> {address}
+            <Icon name="map-pin" size={12} color="#64748B" /> {address}
           </Text>
           
           <View style={styles.divider} />
@@ -72,7 +71,7 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
           <View style={styles.dateTimeContainer}>
             <View style={styles.dateTimeRow}>
               <View style={styles.iconBackground}>
-                <Icon name="calendar" size={16} color="#1A5FB4" />
+                <Icon name="calendar" size={16} color="#0052cc" />
               </View>
               <View>
                 <Text style={styles.dateTimeLabel}>Date</Text>
@@ -81,7 +80,7 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
             </View>
             <View style={[styles.dateTimeRow, { marginTop: 12 }]}>
               <View style={styles.iconBackground}>
-                <Icon name="clock" size={16} color="#1A5FB4" />
+                <Icon name="clock" size={16} color="#0052cc" />
               </View>
               <View>
                 <Text style={styles.dateTimeLabel}>Time Window</Text>
@@ -95,7 +94,7 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderLeft}>
-              <Icon name="truck" size={18} color="#1A1D20" style={{ marginRight: 8 }} />
+              <Icon name="truck" size={18} color="#0F172A" style={{ marginRight: 8 }} />
               <Text style={styles.cardHeaderTitle}>Vehicle Info</Text>
             </View>
             <TouchableOpacity>
@@ -105,7 +104,7 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
 
           <View style={styles.vehicleDetailsRow}>
             <View style={styles.carIconContainer}>
-              <Icon name="tag" size={20} color="#1A5FB4" />
+              <Icon name="tag" size={20} color="#0052cc" />
             </View>
             <View>
               <Text style={styles.licensePlate}>ABC-1234</Text>
@@ -117,7 +116,7 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
         {/* Price Details Card */}
         <View style={styles.card}>
           <View style={styles.cardHeaderLeft}>
-            <Icon name="credit-card" size={18} color="#1A1D20" style={{ marginRight: 8, marginBottom: 14 }} />
+            <Icon name="credit-card" size={18} color="#0F172A" style={{ marginRight: 8, marginBottom: 14 }} />
             <Text style={[styles.cardHeaderTitle, { marginBottom: 14 }]}>Price Details</Text>
           </View>
 
@@ -149,29 +148,29 @@ const ConfirmBooking = ({ parking, slotId, onBack, onConfirm }) => {
               </View>
               <Text style={styles.cardDigits}>•••• 4242</Text>
             </View>
-            <Icon name="chevron-right" size={20} color="#9CA3AF" />
+            <Icon name="chevron-right" size={20} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 
         {/* Cancellation Notice */}
         <View style={styles.noticeRow}>
-          <Icon name="info" size={16} color="#6B7280" style={{ marginRight: 8, marginTop: 2 }} />
+          <Icon name="info" size={16} color="#64748B" style={{ marginRight: 8, marginTop: 2 }} />
           <Text style={styles.noticeText}>
             Free cancellation up to 30 minutes before your start time. After that, a ₹50.00 cancellation fee applies.
           </Text>
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Confirm Button */}
-      <View style={styles.footerButtonContainer}>
+      {/* Floating Confirm Button */}
+      <View style={styles.footerButtonContainer} pointerEvents="box-none">
         <TouchableOpacity style={styles.confirmButton} onPress={onConfirm} activeOpacity={0.85}>
           <Text style={styles.confirmButtonText}>Confirm Booking</Text>
           <Icon name="arrow-right" size={20} color="#FFFFFF" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

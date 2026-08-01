@@ -61,10 +61,10 @@ const App = () => {
   const showTabBar = currentScreen !== 'Opening' && currentScreen !== 'Login';
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       {showTabBar ? (
-        <View style={{ flex: 1 }}>
-          <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {currentScreen === 'Home' && (
               <Home
                 onBack={() => setCurrentScreen('Login')}
@@ -207,7 +207,7 @@ const App = () => {
           )}
         </>
       )}
-    </>
+    </View>
   );
 };
 

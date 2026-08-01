@@ -1,358 +1,292 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
-  SafeAreaView,
   Text,
   View,
   TouchableOpacity,
   StatusBar,
   ScrollView,
-  Dimensions,
+  Alert,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import Feather from 'react-native-vector-icons/Feather';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './SlotSelectionStyles';
 
 const SlotSelection = ({ parking, onBack, onContinue }) => {
-  const rate = parking?.rate || 80;
+  const facilityName = parking?.name || 'Central Plaza Parking';
 
-  // Levels selection state
-  const levels = ['Level 1', 'Level 2', 'Level 3'];
-  const [selectedLevel, setSelectedLevel] = useState('Level 2');
+  // Spatial slot grid map matching Staff assignment matrix
+  const [slots] = useState([
+    // Top Row (T-01 to T-10)
+    ...Array.from({ length: 10 }, (_, i) => ({
+      id: `T-${(i + 1).toString().padStart(2, '0')}`,
+      type: i % 3 === 0 ? 'EV Charging' : 'Standard',
+      status: i === 2 || i === 7 ? 'maintenance' : 'available',
+      zone: facilityName,
+    })),
+    // Left Lane (L-01 to L-08)
+    ...Array.from({ length: 8 }, (_, i) => ({
+      id: `L-${(i + 1).toString().padStart(2, '0')}`,
+      type: 'Standard',
+      status: i === 0 || i === 4 ? 'available' : 'occupied',
+      zone: facilityName,
+    })),
+    // Aisle A (A-01 to A-16) - Double side
+    ...Array.from({ length: 16 }, (_, i) => ({
+      id: `A-${(i + 1).toString().padStart(2, '0')}`,
+      type: i % 4 === 0 ? 'EV Charging' : 'Standard',
+      status: i < 6 ? 'occupied' : (i === 11 ? 'maintenance' : 'available'),
+      zone: facilityName,
+    })),
+    // Aisle B (B-01 to B-16) - Double side
+    ...Array.from({ length: 16 }, (_, i) => ({
+      id: `B-${(i + 1).toString().padStart(2, '0')}`,
+      type: 'Standard',
+      status: i % 3 === 0 ? 'occupied' : 'available',
+      zone: facilityName,
+    })),
+    // Right Lane (R-01 to R-08)
+    ...Array.from({ length: 8 }, (_, i) => ({
+      id: `R-${(i + 1).toString().padStart(2, '0')}`,
+      type: 'Standard',
+      status: i % 2 === 0 ? 'occupied' : 'available',
+      zone: facilityName,
+    })),
+  ]);
 
-  // Hardcode or generate slot lists for all levels so they persist
-  // We'll define a state that holds slot allocations for all levels.
-  const [levelSlots, setLevelSlots] = useState({
-    'Level 1': [
-      { id: 'A-01', status: 'available' },
-      { id: 'A-02', status: 'occupied' },
-      { id: 'A-03', status: 'occupied' },
-      { id: 'A-04', status: 'available' },
-      { id: 'A-05', status: 'available' },
-      { id: 'A-06', status: 'occupied' },
-      { id: 'A-07', status: 'occupied' },
-      { id: 'A-08', status: 'available' },
-      { id: 'A-09', status: 'available' },
-      { id: 'A-10', status: 'available' },
-      { id: 'A-11', status: 'occupied' },
-      { id: 'A-12', status: 'available' },
-      { id: 'A-13', status: 'available' },
-      { id: 'A-14', status: 'occupied' },
-    ],
-    'Level 2': [
-      { id: 'B-01', status: 'available' },
-      { id: 'B-02', status: 'occupied' },
-      { id: 'B-03', status: 'occupied' },
-      { id: 'B-04', status: 'available' },
-      { id: 'B-05', status: 'available' },
-      { id: 'B-06', status: 'occupied' },
-      { id: 'B-07', status: 'available' },
-      { id: 'B-08', status: 'available' },
-      { id: 'B-09', status: 'occupied' },
-      { id: 'B-10', status: 'available' },
-      { id: 'B-11', status: 'occupied' },
-      { id: 'B-12', status: 'selected' }, // B-12 selected by default
-      { id: 'B-13', status: 'available' },
-      { id: 'B-14', status: 'available' },
-      { id: 'B-15', status: 'occupied' },
-      { id: 'B-16', status: 'available' },
-    ],
-    'Level 3': [
-      { id: 'C-01', status: 'occupied' },
-      { id: 'C-02', status: 'available' },
-      { id: 'C-03', status: 'available' },
-      { id: 'C-04', status: 'occupied' },
-      { id: 'C-05', status: 'available' },
-      { id: 'C-06', status: 'available' },
-      { id: 'C-07', status: 'occupied' },
-      { id: 'C-08', status: 'occupied' },
-      { id: 'C-09', status: 'available' },
-      { id: 'C-10', status: 'available' },
-      { id: 'C-11', status: 'available' },
-      { id: 'C-12', status: 'occupied' },
-    ],
-  });
+  const [selectedSlotId, setSelectedSlotId] = useState('A-08');
 
-  // Handler to toggle selection of a slot
-  const handleSlotPress = (level, slotId) => {
-    setLevelSlots((prev) => {
-      const updated = { ...prev };
-      
-      // First, clear any other 'selected' slot across ALL levels to make it single selection
-      Object.keys(updated).forEach((lvl) => {
-        updated[lvl] = updated[lvl].map((slot) => {
-          if (slot.status === 'selected') {
-            return { ...slot, status: 'available' };
-          }
-          return slot;
-        });
-      });
+  const selectedSlot = slots.find(s => s.id === selectedSlotId);
 
-      // Now toggle/set the current slot
-      updated[level] = updated[level].map((slot) => {
-        if (slot.id === slotId) {
-          return {
-            ...slot,
-            status: slot.status === 'selected' ? 'available' : 'selected',
-          };
-        }
-        return slot;
-      });
-
-      return updated;
-    });
+  const handleSlotPress = (slot) => {
+    if (slot.status === 'occupied') {
+      Alert.alert('Slot Occupied', `Slot ${slot.id} currently has a vehicle parked in it.`);
+      return;
+    }
+    if (slot.status === 'maintenance') {
+      Alert.alert('Under Maintenance', `Slot ${slot.id} is offline for maintenance work.`);
+      return;
+    }
+    setSelectedSlotId(slot.id === selectedSlotId ? null : slot.id);
   };
 
-  // Find currently selected slot and its level
-  const selectionInfo = useMemo(() => {
-    for (const level of Object.keys(levelSlots)) {
-      const selected = levelSlots[level].find((s) => s.status === 'selected');
-      if (selected) {
-        return { level, slot: selected };
-      }
+  const handleProceed = () => {
+    if (!selectedSlotId) {
+      Alert.alert('No Slot Selected', 'Please select an available parking slot from the map grid.');
+      return;
     }
-    return null;
-  }, [levelSlots]);
+    onContinue?.(selectedSlotId);
+  };
 
-  const activeLevelSlots = levelSlots[selectedLevel] || [];
+  // Helper filters to split layout sectors
+  const topSlots = slots.filter(s => s.id.startsWith('T-'));
+  const leftSlots = slots.filter(s => s.id.startsWith('L-'));
+  const rightSlots = slots.filter(s => s.id.startsWith('R-'));
+  
+  // Aisle A splits (A-01 to A-08 is left row, A-09 to A-16 is right row)
+  const aisleALeft = slots.filter(s => s.id.startsWith('A-')).slice(0, 8);
+  const aisleARight = slots.filter(s => s.id.startsWith('A-')).slice(8, 16);
+  
+  // Aisle B splits
+  const aisleBLeft = slots.filter(s => s.id.startsWith('B-')).slice(0, 8);
+  const aisleBRight = slots.filter(s => s.id.startsWith('B-')).slice(8, 16);
 
-  // Group slots into rows of 2 (left and right columns)
-  const slotRows = useMemo(() => {
-    const rows = [];
-    for (let i = 0; i < activeLevelSlots.length; i += 2) {
-      rows.push({
-        left: activeLevelSlots[i],
-        right: activeLevelSlots[i + 1] || null,
-        rowIndex: i / 2,
-      });
-    }
-    return rows;
-  }, [activeLevelSlots]);
+  const availableCount = slots.filter(s => s.status === 'available').length;
 
-  const renderSlotIcon = (status) => {
-    if (status === 'available') {
-      return <Icon name="truck" size={18} color="#FFFFFF" />;
+  const renderSlotCell = (slot) => {
+    const isSelected = selectedSlotId === slot.id;
+    let cellStyle = styles.cellAvailable;
+    let labelColor = '#15803D';
+
+    if (slot.status === 'occupied') {
+      cellStyle = styles.cellOccupied;
+    } else if (slot.status === 'maintenance') {
+      cellStyle = styles.cellMaintenance;
+      labelColor = '#94A3B8';
     }
-    if (status === 'occupied') {
-      return <Icon name="slash" size={18} color="#9CA3AF" />;
+
+    if (isSelected) {
+      cellStyle = styles.cellSelected;
+      labelColor = '#FFFFFF';
     }
-    if (status === 'selected') {
-      return <Icon name="check-circle" size={18} color="#FFFFFF" />;
-    }
-    return null;
+
+    return (
+      <TouchableOpacity
+        key={slot.id}
+        style={[styles.slotCell, cellStyle]}
+        onPress={() => handleSlotPress(slot)}
+        activeOpacity={0.8}
+        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+      >
+        {slot.status === 'occupied' ? (
+          <MaterialCommunityIcons name="car" size={18} color="#EF4444" />
+        ) : slot.status === 'maintenance' ? (
+          <MaterialCommunityIcons name="alert-circle-outline" size={14} color="#94A3B8" />
+        ) : (
+          <Text style={[styles.slotCellText, { color: labelColor }]}>{slot.id}</Text>
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={styles.container}>
+      <StatusBar translucent={false} backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color="#1A1D20" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Parking Slot</Text>
-        <TouchableOpacity style={styles.menuButton}>
-          <Icon name="more-vertical" size={24} color="#1A1D20" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Level Selector Tabs */}
-      <View style={styles.levelSelectorContainer}>
-        {levels.map((level) => (
-          <TouchableOpacity
-            key={level}
-            style={[
-              styles.levelTab,
-              selectedLevel === level && styles.levelTabActive,
-            ]}
-            onPress={() => setSelectedLevel(level)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.levelTabText,
-                selectedLevel === level && styles.levelTabTextActive,
-              ]}
-            >
-              {level}
-            </Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.75}>
+            <Feather name="arrow-left" size={24} color="#0052cc" />
           </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Legend */}
-      <View style={styles.legendContainer}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, styles.legendAvailable]} />
-          <Text style={styles.legendText}>Available</Text>
+          <Text style={styles.headerTitle}>Select Parking Slot</Text>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, styles.legendOccupied]} />
-          <Text style={styles.legendText}>Occupied</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, styles.legendSelected]} />
-          <Text style={styles.legendText}>Selected</Text>
+        <View style={styles.avatarCircle}>
+          <Feather name="user" size={18} color="#0052cc" />
         </View>
       </View>
 
-      {/* Scrollable Slot selection area */}
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.gridContainer}>
-          <View style={styles.gridHeader}>
-            <Text style={styles.sectorTitle}>
-              {selectedLevel.toUpperCase()} - SECTOR B
-            </Text>
-            <Text style={styles.slotsLeftText}>
-              {activeLevelSlots.filter((s) => s.status === 'available').length} Available
-            </Text>
-          </View>
-
-          {/* Parking Layout rows */}
-          <View style={styles.parkingLayout}>
-            {slotRows.map((row, index) => {
-              // Alternate direction arrow or driveway labels per row
-              let middleComponent = (
-                <View style={styles.trafficIndicator}>
-                  <Icon name="arrow-down" size={16} color="#BCC2CD" />
-                </View>
-              );
-              if (row.rowIndex % 3 === 1) {
-                middleComponent = (
-                  <View style={styles.drivewayLabelContainer}>
-                    <Text style={styles.drivewayText}>DRIVEWAY</Text>
-                  </View>
-                );
-              } else if (row.rowIndex % 3 === 2) {
-                middleComponent = (
-                  <View style={styles.trafficIndicator}>
-                    <Icon name="arrow-up" size={16} color="#BCC2CD" />
-                  </View>
-                );
-              }
-
-              return (
-                <View key={index} style={styles.layoutRow}>
-                  {/* Left Slot Box */}
-                  {row.left && (
-                    <TouchableOpacity
-                      style={[
-                        styles.slotBox,
-                        row.left.status === 'available' && styles.slotAvailable,
-                        row.left.status === 'occupied' && styles.slotOccupied,
-                        row.left.status === 'selected' && styles.slotSelected,
-                      ]}
-                      onPress={() => handleSlotPress(selectedLevel, row.left.id)}
-                      disabled={row.left.status === 'occupied'}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.slotIdText,
-                          row.left.status === 'occupied' && styles.slotIdOccupiedText,
-                        ]}
-                      >
-                        {row.left.id}
-                      </Text>
-                      {renderSlotIcon(row.left.status)}
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Middle Driveway details */}
-                  {middleComponent}
-
-                  {/* Right Slot Box */}
-                  {row.right ? (
-                    <TouchableOpacity
-                      style={[
-                        styles.slotBox,
-                        row.right.status === 'available' && styles.slotAvailable,
-                        row.right.status === 'occupied' && styles.slotOccupied,
-                        row.right.status === 'selected' && styles.slotSelected,
-                      ]}
-                      onPress={() => handleSlotPress(selectedLevel, row.right.id)}
-                      disabled={row.right.status === 'occupied'}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.slotIdText,
-                          row.right.status === 'occupied' && styles.slotIdOccupiedText,
-                        ]}
-                      >
-                        {row.right.id}
-                      </Text>
-                      {renderSlotIcon(row.right.status)}
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={[styles.slotBox, { opacity: 0 }]} /> // spacer
-                  )}
-                </View>
-              );
-            })}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* Global Occupancy summary card */}
+        <View style={styles.occupancyCard}>
+          <Text style={styles.occupancySubtitle}>FACILITY AVAILABILITY</Text>
+          <Text style={styles.occupancyTitle}>{availableCount} Slots Available</Text>
+          <View style={styles.chipsRow}>
+            <View style={styles.chip}><Text style={styles.chipText}>Zone P1</Text></View>
+            <View style={styles.chip}><Text style={styles.chipText}>{facilityName}</Text></View>
           </View>
         </View>
 
-        {/* Selected Slot Summary Details Card */}
-        {selectionInfo ? (
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryLeft}>
-              <View style={styles.logoBadge}>
-                <Text style={styles.logoLetter}>P</Text>
-              </View>
-              <View style={styles.summaryTextContent}>
-                <Text style={styles.summaryTitle}>
-                  Selected Slot: {selectionInfo.slot.id}
-                </Text>
-                <Text style={styles.summarySubtitle}>
-                  Floor: {selectionInfo.level} • Sector B
-                </Text>
-              </View>
+        {/* Legend status indicators */}
+        <Text style={styles.legendTitle}>Status Legend</Text>
+        <View style={styles.legendContainer}>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: '#22C55E' }]} />
+              <Text style={styles.legendLabel}>Available</Text>
             </View>
-            <View style={styles.summaryRight}>
-              <Text style={styles.summaryRate}>₹{rate}/hr</Text>
-              <Text style={styles.summaryStatusText}>Available Now</Text>
+            <View style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: '#0052cc' }]} />
+              <Text style={styles.legendLabel}>Selected</Text>
             </View>
-          </View>
-        ) : (
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryLeft}>
-              <View style={styles.logoBadge}>
-                <Text style={styles.logoLetter}>P</Text>
-              </View>
-              <View style={styles.summaryTextContent}>
-                <Text style={styles.summaryTitle}>Select a Slot</Text>
-                <Text style={styles.summarySubtitle}>
-                  Please choose a level and available slot
-                </Text>
-              </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
+              <Text style={styles.legendLabel}>Occupied</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: '#94A3B8' }]} />
+              <Text style={styles.legendLabel}>Maintenance</Text>
             </View>
           </View>
-        )}
+        </View>
+
+        {/* Facility Layout Header */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Facility Spatial Grid Map</Text>
+          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
+            <Feather name="sliders" size={14} color="#0052cc" style={{ marginRight: 6 }} />
+            <Text style={styles.filterBtnText}>Filter</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* High-Density Spatial Parking Grid Map Container */}
+        <View style={styles.gridMapContainer}>
+          
+          {/* Top Row of horizontal slots */}
+          <View style={styles.topSlotsRow}>
+            {topSlots.map(renderSlotCell)}
+          </View>
+
+          {/* Core grid body containing Left, aisles, Right rows */}
+          <View style={styles.gridBodyRow}>
+            
+            {/* Left Lane vertical slots */}
+            <View style={styles.verticalLane}>
+              {leftSlots.map(renderSlotCell)}
+            </View>
+
+            {/* Middle aisles separator space */}
+            <View style={styles.aislesContainer}>
+              
+              {/* Aisle A Column double-sided */}
+              <View style={styles.aisleColumn}>
+                <View style={styles.aisleSubCol}>
+                  {aisleALeft.map(renderSlotCell)}
+                </View>
+                <View style={styles.dividerDots}>
+                  <Text style={styles.dotsText}>...</Text>
+                </View>
+                <View style={styles.aisleSubCol}>
+                  {aisleARight.map(renderSlotCell)}
+                </View>
+              </View>
+
+              {/* Aisle B Column double-sided */}
+              <View style={styles.aisleColumn}>
+                <View style={styles.aisleSubCol}>
+                  {aisleBLeft.map(renderSlotCell)}
+                </View>
+                <View style={styles.dividerDots}>
+                  <Text style={styles.dotsText}>...</Text>
+                </View>
+                <View style={styles.aisleSubCol}>
+                  {aisleBRight.map(renderSlotCell)}
+                </View>
+              </View>
+
+            </View>
+
+            {/* Right Lane vertical slots */}
+            <View style={styles.verticalLane}>
+              {rightSlots.map(renderSlotCell)}
+            </View>
+
+          </View>
+
+          {/* Bottom car decals / directional indicators */}
+          <View style={styles.bottomDecalsRow}>
+            <MaterialCommunityIcons name="arrow-left-right" size={24} color="#94A3B8" />
+            <MaterialCommunityIcons name="arrow-left-right" size={24} color="#94A3B8" />
+          </View>
+
+        </View>
+
+        {/* Selected Slot Information Panel */}
+        <View style={styles.detailsPanel}>
+          {selectedSlot ? (
+            <View style={styles.detailsContent}>
+              <View style={styles.detailsHeaderRow}>
+                <View>
+                  <Text style={styles.detailsSlotId}>Slot {selectedSlot.id}</Text>
+                  <Text style={styles.detailsMetadata}>Facility: {selectedSlot.zone}</Text>
+                  <Text style={styles.detailsMetadata}>Type: {selectedSlot.type} Space</Text>
+                </View>
+                <View style={styles.badgeAvailable}>
+                  <Text style={styles.badgeTextAvailable}>Available</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.confirmBtn}
+                onPress={handleProceed}
+                activeOpacity={0.85}
+              >
+                <MaterialCommunityIcons name="credit-card-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.confirmBtnText}>Proceed to Confirm Booking</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.detailsPlaceholder}>
+              <Feather name="info" size={20} color="#0052cc" style={{ marginBottom: 6 }} />
+              <Text style={styles.placeholderText}>
+                Select an available parking slot from the spatial map above to reserve.
+              </Text>
+            </View>
+          )}
+        </View>
+
       </ScrollView>
-
-      {/* Continue Button */}
-      <View style={styles.footerButtonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            !selectionInfo && styles.continueButtonDisabled,
-          ]}
-          onPress={() => onContinue?.(selectionInfo?.slot?.id)}
-          disabled={!selectionInfo}
-        >
-          <Text style={styles.continueButtonText}>Continue to Payment</Text>
-          <Icon
-            name="arrow-right"
-            size={20}
-            color="#FFFFFF"
-            style={styles.continueIcon}
-          />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

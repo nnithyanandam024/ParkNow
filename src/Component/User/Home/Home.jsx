@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './HomeStyles';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.7;
+const CARD_WIDTH = width * 0.75;
 
 // Sample parking data
 const PARKING_SPOTS = [
@@ -89,7 +89,7 @@ const FILTERS = [
   { id: 'accessible', label: 'Accessible', icon: 'user' },
 ];
 
-// Build Leaflet HTML with OpenStreetMap tiles (no API key needed)
+// Build Leaflet HTML with OpenStreetMap tiles
 const buildMapHTML = (spots) => {
   const markersJS = spots
     .map(
@@ -121,21 +121,21 @@ const buildMapHTML = (spots) => {
     html, body, #map { width: 100%; height: 100%; }
     .price-marker { background: none; border: none; }
     .marker-bubble {
-      background: #1A5FB4;
+      background: #0052cc;
       color: #fff;
       font-size: 13px;
       font-weight: 800;
       padding: 5px 10px;
       border-radius: 16px;
       text-align: center;
-      box-shadow: 0 2px 6px rgba(26,95,180,0.4);
+      box-shadow: 0 2px 8px rgba(0,82,204,0.35);
       white-space: nowrap;
     }
     .marker-arrow {
       width: 0; height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 8px solid #1A5FB4;
+      border-top: 8px solid #0052cc;
       margin: -1px auto 0 auto;
     }
   </style>
@@ -154,7 +154,6 @@ const buildMapHTML = (spots) => {
 
     ${markersJS}
 
-    // Listen for flyTo commands from React Native
     document.addEventListener('message', function(e) {
       try {
         var data = JSON.parse(e.data);
@@ -178,7 +177,6 @@ const buildMapHTML = (spots) => {
 };
 
 const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
-  const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState('nearby');
   const webViewRef = useRef(null);
   const flatListRef = useRef(null);
@@ -217,12 +215,12 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
           {item.name}
         </Text>
         <View style={styles.ratingBadge}>
-          <Icon name="star" size={12} color="#3af50bff" />
+          <Icon name="star" size={12} color="#16A34A" />
           <Text style={styles.ratingText}>{item.rating}</Text>
         </View>
       </View>
       <View style={styles.cardMeta}>
-        <Icon name="navigation" size={13} color="#6B7280" />
+        <Icon name="navigation" size={13} color="#64748B" />
         <Text style={styles.cardMetaText}>
           {item.distance} • {item.time}
         </Text>
@@ -270,7 +268,7 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
         translucent
       />
 
-      {/* OpenStreetMap via Leaflet WebView */}
+      {/* Leaflet Map */}
       <WebView
         ref={webViewRef}
         source={{ html: mapHTML }}
@@ -287,25 +285,25 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
 
       {/* Floating Header */}
       <View style={styles.headerOverlay} pointerEvents="box-none">
-        <View style={styles.headerContent} pointerEvents="box-none">
+        <View pointerEvents="box-none">
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               {onBack && (
                 <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-                  <Icon name="arrow-left" size={20} color="#1A1D20" />
+                  <Icon name="arrow-left" size={20} color="#0F172A" />
                 </TouchableOpacity>
               )}
               <View>
                 <Text style={styles.greeting}>Hello, Alex</Text>
                 <View style={styles.locationRow}>
-                  <Icon name="map-pin" size={13} color="#1A5FB4" />
+                  <Icon name="map-pin" size={12} color="#0052cc" />
                   <Text style={styles.locationText}>New York, NY</Text>
                 </View>
               </View>
             </View>
             <TouchableOpacity style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Icon name="user" size={20} color="#FFFFFF" />
+                <Icon name="user" size={20} color="#0052cc" />
               </View>
             </TouchableOpacity>
           </View>
@@ -316,7 +314,7 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
             onPress={onSearch}
             activeOpacity={0.8}
           >
-            <Icon name="search" size={18} color="#9CA3AF" />
+            <Icon name="search" size={18} color="#94A3B8" />
             <Text style={styles.searchPlaceholder}>Where to park?</Text>
           </TouchableOpacity>
 
@@ -339,7 +337,7 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
                 <Icon
                   name={filter.icon}
                   size={14}
-                  color={activeFilter === filter.id ? '#FFFFFF' : '#374151'}
+                  color={activeFilter === filter.id ? '#FFFFFF' : '#64748B'}
                   style={styles.filterIcon}
                 />
                 <Text

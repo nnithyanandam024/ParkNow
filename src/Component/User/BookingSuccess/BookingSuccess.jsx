@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  SafeAreaView,
   Text,
   View,
   TouchableOpacity,
@@ -37,7 +36,7 @@ const BookingSuccess = ({ parking, slotId, onDone, onViewQR, onNavigateToSlot })
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
@@ -49,7 +48,7 @@ const BookingSuccess = ({ parking, slotId, onDone, onViewQR, onNavigateToSlot })
           <Text style={styles.logoText}>ParkNow</Text>
         </View>
         <View style={styles.avatar}>
-          <FeatherIcon name="user" size={16} color="#FFFFFF" />
+          <FeatherIcon name="user" size={16} color="#0052cc" />
         </View>
       </View>
 
@@ -110,7 +109,7 @@ const BookingSuccess = ({ parking, slotId, onDone, onViewQR, onNavigateToSlot })
             <View>
               <Text style={styles.ticketLabel}>PARKING LOCATION</Text>
               <View style={styles.locationRow}>
-                <FeatherIcon name="map-pin" size={14} color="#1A5FB4" style={{ marginRight: 6 }} />
+                <FeatherIcon name="map-pin" size={14} color="#0052cc" style={{ marginRight: 6 }} />
                 <Text style={styles.locationValue} numberOfLines={1}>{destinationName}</Text>
               </View>
             </View>
@@ -118,8 +117,8 @@ const BookingSuccess = ({ parking, slotId, onDone, onViewQR, onNavigateToSlot })
         </View>
       </ScrollView>
 
-      {/* Action Buttons */}
-      <View style={styles.footerContainer}>
+      {/* Floating Action Buttons Container */}
+      <View style={styles.footerContainer} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.qrButton}
           activeOpacity={0.85}
@@ -134,7 +133,7 @@ const BookingSuccess = ({ parking, slotId, onDone, onViewQR, onNavigateToSlot })
           onPress={onNavigateToSlot}
           activeOpacity={0.8}
         >
-          <FeatherIcon name="navigation" size={18} color="#1A5FB4" style={{ marginRight: 8 }} />
+          <FeatherIcon name="navigation" size={18} color="#0052cc" style={{ marginRight: 8 }} />
           <Text style={styles.navigateButtonText}>Navigate to Slot</Text>
         </TouchableOpacity>
 
@@ -142,7 +141,7 @@ const BookingSuccess = ({ parking, slotId, onDone, onViewQR, onNavigateToSlot })
           <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
