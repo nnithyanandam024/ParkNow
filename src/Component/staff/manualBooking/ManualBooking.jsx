@@ -27,7 +27,19 @@ const getTodayDateString = (offsetDays = 0) => {
   return `${day}/${month}/${year}`;
 };
 
-const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner }) => {
+const getCurrentDeviceTimeString = () => {
+  const d = new Date();
+  let hours = d.getHours();
+  const minutes = d.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const paddedHours = hours.toString().padStart(2, '0');
+  const paddedMinutes = minutes.toString().padStart(2, '0');
+  return `${paddedHours}:${paddedMinutes} ${ampm}`;
+};
+
+const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNavigateToScreen }) => {
 
   const [customerName, setCustomerName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -37,7 +49,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner }) => {
   const [duration, setDuration] = useState('2 Hours');
   const [inDate, setInDate] = useState(getTodayDateString(0));
   const [outDate, setOutDate] = useState(getTodayDateString(0));
-  const [inTime, setInTime] = useState('10:00 AM');
+  const [inTime, setInTime] = useState(getCurrentDeviceTimeString());
   const [outTime, setOutTime] = useState('12:00 PM');
   const [availableSlot, setAvailableSlot] = useState('Level 1 - A-102 (Standard)');
   
@@ -194,17 +206,6 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner }) => {
         payment: 'PAID',
       });
     }
-
-    Alert.alert(
-      'Booking Confirmed',
-      'Walk-in entry has been logged and payment processed successfully!',
-      [
-        {
-          text: 'OK',
-          onPress: () => onBack(),
-        },
-      ]
-    );
   };
 
   const handleAssignSlotOnly = () => {
@@ -433,39 +434,15 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner }) => {
             </View>
           )}
 
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Available Slot</Text>
-            <TouchableOpacity 
-              style={styles.dropdownBox}
-              activeOpacity={0.8}
-              onPress={() => Alert.alert('Available Slots', 'Level 1 - A-102, Level 1 - A-103, Level 2 - B-201')}
-            >
-              <View style={styles.dropdownLeft}>
-                <MaterialCommunityIcons name="parking" size={18} color="#94A3B8" style={{ marginRight: 10 }} />
-                <Text style={styles.dropdownValueText}>{availableSlot}</Text>
-              </View>
-              <Feather name="chevron-down" size={16} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-
           {/* Form Actions */}
           <View style={{ marginTop: 24 }}>
-            <TouchableOpacity 
-              style={styles.assignSlotBtn}
-              onPress={handleAssignSlotOnly}
-              activeOpacity={0.85}
-            >
-              <Feather name="clipboard" size={18} color="#0052cc" style={{ marginRight: 8 }} />
-              <Text style={styles.assignSlotBtnText}>Assign Slot</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity 
               style={styles.proceedPaymentBtn}
               onPress={handleProceedPayment}
               activeOpacity={0.85}
             >
-              <MaterialCommunityIcons name="credit-card-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.proceedPaymentBtnText}>Proceed Payment</Text>
+              <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.proceedPaymentBtnText}>Assign Slot</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -487,6 +464,8 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner }) => {
             onBack();
           } else if (tab === 'Scanner') {
             onNavigateToScanner();
+          } else if (onNavigateToScreen) {
+            onNavigateToScreen(tab);
           } else {
             onBack();
           }

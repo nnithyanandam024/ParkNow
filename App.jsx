@@ -6,9 +6,14 @@ import Login from './src/Component/Login/Login';
 import Dashboard from './src/Component/staff/dashboard/dashboard';
 import QRScanner from './src/Component/staff/qr sacnner/QRScanner';
 import ManualBooking from './src/Component/staff/manualBooking/ManualBooking';
+import SlotAssignment from './src/Component/staff/slotAssignment/SlotAssignment';
+import CollectPayment from './src/Component/staff/collectPayment/CollectPayment';
+import BookingSuccess from './src/Component/staff/bookingSuccess/BookingSuccess';
+import BookingsList from './src/Component/staff/bookingsList/BookingsList';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Opening');
+  const [pendingBooking, setPendingBooking] = useState(null);
 
   const getSafeAreaBg = () => {
     if (currentScreen === 'Login') return '#1D64C6';
@@ -66,6 +71,16 @@ const App = () => {
   };
 
   const handleBookingSuccess = (booking) => {
+    setPendingBooking(booking);
+    setCurrentScreen('SlotAssignment');
+  };
+
+  const handleFinalizeAssignment = (booking) => {
+    setPendingBooking(booking);
+    setCurrentScreen('CollectPayment');
+  };
+
+  const handleFinalizePayment = (booking) => {
     setAvailableSlots(prev => Math.max(0, prev - 1));
     setOccupiedSlots(prev => prev + 1);
     setTodaysTotal(prev => prev + 1);
@@ -74,11 +89,13 @@ const App = () => {
     const newActivity = {
       id: Date.now().toString(),
       lpn: booking.lpn,
-      details: `Manual Booking • ${timeStr}`,
+      details: `Slot ${booking.slotNum} Assigned (${booking.paymentMethod}) • ${timeStr}`,
       status: 'SUCCESS',
       type: 'in',
     };
     setRecentActivity(prev => [newActivity, ...prev]);
+    setPendingBooking(booking);
+    setCurrentScreen('BookingSuccess');
   };
 
   const handleCheckOut = (lpn, amount) => {
@@ -118,6 +135,7 @@ const App = () => {
             recentActivity={recentActivity}
             onNavigateToScanner={() => setCurrentScreen('QRScanner')}
             onNavigateToManualBooking={() => setCurrentScreen('ManualBooking')}
+            onNavigateToScreen={setCurrentScreen}
           />
         )}
         {currentScreen === 'QRScanner' && (
@@ -135,6 +153,34 @@ const App = () => {
             onBack={() => setCurrentScreen('Dashboard')}
             onBookingSuccess={handleBookingSuccess}
             onNavigateToScanner={() => setCurrentScreen('QRScanner')}
+            onNavigateToScreen={setCurrentScreen}
+          />
+        )}
+        {currentScreen === 'SlotAssignment' && (
+          <SlotAssignment
+            pendingBooking={pendingBooking}
+            onBack={() => setCurrentScreen('Dashboard')}
+            onFinalizeAssignment={handleFinalizeAssignment}
+            onNavigateToScanner={() => setCurrentScreen('QRScanner')}
+            onNavigateToScreen={setCurrentScreen}
+          />
+        )}
+        {currentScreen === 'CollectPayment' && (
+          <CollectPayment
+            pendingBooking={pendingBooking}
+            onBack={() => setCurrentScreen('Dashboard')}
+            onFinalizePayment={handleFinalizePayment}
+          />
+        )}
+        {currentScreen === 'BookingSuccess' && (
+          <BookingSuccess
+            pendingBooking={pendingBooking}
+            onDone={() => setCurrentScreen('Dashboard')}
+          />
+        )}
+        {currentScreen === 'Bookings' && (
+          <BookingsList
+            onNavigateToScreen={setCurrentScreen}
           />
         )}
       </SafeAreaView>

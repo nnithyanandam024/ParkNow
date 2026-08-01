@@ -23,7 +23,8 @@ const Dashboard = ({
   todaysTotal = 1204,
   recentActivity = [],
   onNavigateToScanner,
-  onNavigateToManualBooking
+  onNavigateToManualBooking,
+  onNavigateToScreen
 }) => {
   const [activeTab, setActiveTab] = useState('Dashboard');
 
@@ -44,7 +45,9 @@ const Dashboard = ({
   };
 
   const handleActiveBookingsPress = () => {
-    Alert.alert('Active Bookings', 'Navigating to Active Bookings...');
+    if (onNavigateToScreen) {
+      onNavigateToScreen('Bookings');
+    }
   };
 
   const handleViewLogPress = () => {
@@ -206,6 +209,8 @@ const Dashboard = ({
           setActiveTab(tab);
           if (tab === 'Scanner' && onNavigateToScanner) {
             onNavigateToScanner();
+          } else if (onNavigateToScreen) {
+            onNavigateToScreen(tab);
           }
         }}
       />
