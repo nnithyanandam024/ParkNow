@@ -116,7 +116,7 @@ const MOCK_TICKETS = [
   },
 ];
 
-const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlots, onNavigateToManualBooking }) => {
+const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlots, onNavigateToManualBooking, checkoutBooking }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [flashOn, setFlashOn] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -184,7 +184,32 @@ const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlot
   // Simulate scanning a code
   const handleSimulateScan = (codeToScan) => {
     if (!codeToScan) return;
-    const ticket = MOCK_TICKETS.find(t => t.code.toUpperCase() === codeToScan.trim().toUpperCase() || t.lpn.toUpperCase() === codeToScan.trim().toUpperCase());
+    
+    let ticket;
+    if (checkoutBooking && (
+      codeToScan.toUpperCase() === 'TICKET-101' || 
+      codeToScan.toUpperCase() === 'TICKET-201' || 
+      codeToScan.toUpperCase() === checkoutBooking.lpn.toUpperCase() ||
+      codeToScan.toUpperCase() === 'TICKET-SIMULATED'
+    )) {
+      ticket = {
+        code: 'TICKET-201',
+        lpn: checkoutBooking.lpn,
+        name: checkoutBooking.name,
+        slotClass: 'Regular',
+        type: 'out',
+        status: 'Checked-In',
+        duration: '2h 00m',
+        fee: checkoutBooking.amount || 12.50,
+        lot: 'Downtown Plaza',
+        zone: 'Zone B',
+        slotNum: checkoutBooking.slot,
+        time: checkoutBooking.time,
+        payment: 'PAID',
+      };
+    } else {
+      ticket = MOCK_TICKETS.find(t => t.code.toUpperCase() === codeToScan.trim().toUpperCase() || t.lpn.toUpperCase() === codeToScan.trim().toUpperCase());
+    }
     
     if (!ticket || ticket.status === 'Expired') {
       setScanFailedVisible(true);
@@ -312,7 +337,11 @@ const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlot
           
           {/* Bottom mask row containing centered controls */}
           <View style={styles.bottomMaskRow}>
-            <Text style={styles.instructionText}>Scan customer QR to verify booking.</Text>
+            <Text style={styles.instructionText}>
+              {checkoutBooking 
+                ? `Scan QR to check out ${checkoutBooking.name} (${checkoutBooking.lpn})` 
+                : 'Scan customer QR to verify booking.'}
+            </Text>
 
             {/* Quick circular buttons */}
             <View style={styles.circleButtonsRow}>

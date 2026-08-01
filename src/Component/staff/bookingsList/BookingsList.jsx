@@ -14,48 +14,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Navbar from '../components/navbar';
 import { styles } from './BookingsListStyles';
 
-const BookingsList = ({ onNavigateToScreen }) => {
+const BookingsList = ({ bookings, setBookings, onNavigateToScreen, onCheckoutPress, onViewDetailsPress }) => {
   const [searchText, setSearchText] = useState('');
   const [activeChip, setActiveChip] = useState('All');
-  const [bookings, setBookings] = useState([
-    {
-      id: '1',
-      name: 'Marcus Holloway',
-      initials: 'MH',
-      avatarBg: '#EFF6FF',
-      avatarColor: '#1D64C6',
-      lpn: 'ABC-1234',
-      model: 'Tesla Model 3',
-      status: 'Parked',
-      slot: 'Slot A-12',
-      time: '14:00 - 16:00',
-    },
-    {
-      id: '2',
-      name: 'Sarah Rogers',
-      initials: 'SR',
-      avatarBg: '#FEF3C7',
-      avatarColor: '#D97706',
-      lpn: 'XYZ-9876',
-      model: 'Audi E-Tron',
-      status: 'Expected',
-      slot: 'Slot B-04',
-      time: '16:30 - 18:30',
-    },
-    {
-      id: '3',
-      name: 'David Kim',
-      initials: 'DK',
-      avatarBg: '#FEE2E2',
-      avatarColor: '#EF4444',
-      lpn: 'EVO-4421',
-      model: 'BMW i4',
-      status: 'Overdue',
-      slot: 'Slot C-22',
-      time: '15:00 (Alert)',
-      isOverdue: true,
-    },
-  ]);
 
   const handleActionPress = (booking) => {
     if (booking.status === 'Expected') {
@@ -65,17 +26,17 @@ const BookingsList = ({ onNavigateToScreen }) => {
       );
       Alert.alert('Checked In', `${booking.name} has been checked in successfully!`);
     } else {
-      // Check out
-      setBookings(prev => prev.filter(b => b.id !== booking.id));
-      Alert.alert('Checked Out', `${booking.name} has been checked out successfully!`);
+      // Check out via QR Scanner
+      if (onCheckoutPress) {
+        onCheckoutPress(booking);
+      }
     }
   };
 
   const handleViewDetails = (booking) => {
-    Alert.alert(
-      'Booking Details',
-      `Customer: ${booking.name}\nVehicle: ${booking.lpn} (${booking.model})\nAssigned Slot: ${booking.slot}\nTime Window: ${booking.time}\nStatus: ${booking.status}`
-    );
+    if (onViewDetailsPress) {
+      onViewDetailsPress(booking);
+    }
   };
 
   const getFilteredBookings = () => {

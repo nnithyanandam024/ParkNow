@@ -10,10 +10,64 @@ import SlotAssignment from './src/Component/staff/slotAssignment/SlotAssignment'
 import CollectPayment from './src/Component/staff/collectPayment/CollectPayment';
 import BookingSuccess from './src/Component/staff/bookingSuccess/BookingSuccess';
 import BookingsList from './src/Component/staff/bookingsList/BookingsList';
+import BookingDetails from './src/Component/staff/bookingDetails/BookingDetails';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Opening');
   const [pendingBooking, setPendingBooking] = useState(null);
+  const [checkoutBooking, setCheckoutBooking] = useState(null);
+  const [viewingBooking, setViewingBooking] = useState(null);
+  const [bookings, setBookings] = useState([
+    {
+      id: '1',
+      name: 'John Doe',
+      initials: 'JD',
+      avatarBg: '#EFF6FF',
+      avatarColor: '#1D64C6',
+      lpn: 'ABC-1234',
+      model: 'White Tesla Model 3 (Sedan)',
+      status: 'Parked',
+      slot: 'B-12',
+      time: 'Today, 02:00 PM - 04:00 PM',
+      phone: '+1 (555) 012-3456',
+      amount: 12.50,
+      paymentMethod: 'Paid via UPI',
+      locationName: 'Downtown Plaza • Floor 2',
+    },
+    {
+      id: '2',
+      name: 'Sarah Rogers',
+      initials: 'SR',
+      avatarBg: '#FEF3C7',
+      avatarColor: '#D97706',
+      lpn: 'XYZ-9876',
+      model: 'Audi E-Tron',
+      status: 'Expected',
+      slot: 'Slot B-04',
+      time: '16:30 - 18:30',
+      phone: '+1 (555) 987-6543',
+      amount: 18.00,
+      paymentMethod: 'Paid via Card',
+      locationName: 'Downtown Plaza • Floor 1',
+    },
+    {
+      id: '3',
+      name: 'David Kim',
+      initials: 'DK',
+      avatarBg: '#FEE2E2',
+      avatarColor: '#EF4444',
+      lpn: 'EVO-4421',
+      model: 'BMW i4',
+      status: 'Overdue',
+      slot: 'Slot C-22',
+      time: '15:00 (Alert)',
+      phone: '+1 (555) 442-1092',
+      amount: 15.00,
+      paymentMethod: 'Paid via Cash',
+      locationName: 'Downtown Plaza • Floor 3',
+      isOverdue: true,
+    },
+  ]);
 
   const getSafeAreaBg = () => {
     if (currentScreen === 'Login') return '#1D64C6';
@@ -102,6 +156,9 @@ const App = () => {
     setOccupiedSlots(prev => Math.max(0, prev - 1));
     setAvailableSlots(prev => prev + 1);
     
+    // Remove the checked out booking from state
+    setBookings(prev => prev.filter(b => b.lpn.toUpperCase() !== lpn.toUpperCase()));
+    
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newActivity = {
       id: Date.now().toString(),
@@ -140,9 +197,22 @@ const App = () => {
         )}
         {currentScreen === 'QRScanner' && (
           <QRScanner
-            onBack={() => setCurrentScreen('Dashboard')}
+            onBack={() => {
+              if (checkoutBooking) {
+                setCurrentScreen('Bookings');
+                setCheckoutBooking(null);
+              } else {
+                setCurrentScreen('Dashboard');
+              }
+            }}
             onCheckIn={handleCheckIn}
-            onCheckOut={handleCheckOut}
+            onCheckOut={(lpn, fee) => {
+              handleCheckOut(lpn, fee);
+              if (checkoutBooking) {
+                setCheckoutBooking(null);
+              }
+            }}
+            checkoutBooking={checkoutBooking}
             availableSlots={availableSlots}
             occupiedSlots={occupiedSlots}
             onNavigateToManualBooking={() => setCurrentScreen('ManualBooking')}
@@ -180,7 +250,26 @@ const App = () => {
         )}
         {currentScreen === 'Bookings' && (
           <BookingsList
+            bookings={bookings}
+            setBookings={setBookings}
             onNavigateToScreen={setCurrentScreen}
+            onCheckoutPress={(booking) => {
+              setCheckoutBooking(booking);
+              setCurrentScreen('QRScanner');
+            }}
+            onViewDetailsPress={(booking) => {
+              setViewingBooking(booking);
+              setCurrentScreen('BookingDetails');
+            }}
+          />
+        )}
+        {currentScreen === 'BookingDetails' && (
+          <BookingDetails
+            booking={viewingBooking}
+            onBack={() => {
+              setCurrentScreen('Bookings');
+              setViewingBooking(null);
+            }}
           />
         )}
       </SafeAreaView>
