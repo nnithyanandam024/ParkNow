@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -13,15 +13,18 @@ import {
 } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import { styles } from './StaffManagementStyles';
+import { adminService } from '../../../services/adminService';
 
 const StaffManagement = () => {
-  const [staffList, setStaffList] = useState([
+  const DEFAULT_STAFF = [
     { id: '1', name: 'Marcus Chen', role: 'Lot Manager', shift: 'Morning Shift', phone: '+1 555-0192', status: 'Active' },
     { id: '2', name: 'Alice Smith', role: 'Gate Attendant', shift: 'Morning Shift', phone: '+1 555-0143', status: 'Active' },
     { id: '3', name: 'Bob Johnson', role: 'Security Guard', shift: 'Evening Shift', phone: '+1 555-0177', status: 'On Break' },
     { id: '4', name: 'David Lee', role: 'Gate Attendant', shift: 'Night Shift', phone: '+1 555-0112', status: 'Offline' },
     { id: '5', name: 'Sarah Connor', role: 'Lot Manager', shift: 'Evening Shift', phone: '+1 555-0155', status: 'Active' },
-  ]);
+  ];
+
+  const [staffList, setStaffList] = useState(DEFAULT_STAFF);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
@@ -56,10 +59,46 @@ const StaffManagement = () => {
     setModalVisible(true);
   };
 
-  const handleSaveStaff = () => {
+  useEffect(() => {
+    async function loadStaff() {
+      const res = await adminService.getStaffList();
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped = res.data.map((s) => ({
+          id: String(s.staff_id),
+          name: s.users?.full_name || 'Staff Member',
+          role: s.job_title || 'Gate Attendant',
+          shift: `${s.shift} Shift`,
+          phone: s.users?.phone || '+1 555-0100',
+          status: s.employment_status || 'Active',
+        }));
+        setStaffList(mapped);
+      }
+    }
+    loadStaff();
+  }, []);
+
+  const handleSaveStaff = async () => {
     if (!formName.trim()) {
       Alert.alert('Validation Error', 'Please enter staff member name.');
       return;
+    }
+
+    if (!editingStaff) {
+      try {
+        const res = await adminService.createStaff({
+          fullName: formName,
+          email: `${formName.toLowerCase().replace(/\s+/g, '')}@parknow.com`,
+          phone: formPhone || `+1 555-${Math.floor(1000 + Math.random() * 9000)}`,
+          password: 'staffpassword',
+          jobTitle: formRole,
+          shift: formShift.toUpperCase(),
+        });
+        if (res.success) {
+          Alert.alert('Success', `Staff member ${formName} created in Supabase!`);
+        }
+      } catch (err) {
+        console.log('Supabase staff creation error:', err);
+      }
     }
 
     if (editingStaff) {

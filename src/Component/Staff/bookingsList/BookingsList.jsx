@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -13,59 +13,79 @@ import Feather from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Navbar from '../components/navbar';
 import { styles } from './BookingsListStyles';
+import { supabase } from '../../../config/supabase';
+import { realtimeService } from '../../../services/realtimeService';
 
 const BookingsList = ({ onNavigateToScreen }) => {
   const [searchText, setSearchText] = useState('');
   const [activeChip, setActiveChip] = useState('All');
-  const [bookings, setBookings] = useState([
-    {
-      id: '1',
-      name: 'Marcus Holloway',
-      initials: 'MH',
-      avatarBg: '#EFF6FF',
-      avatarColor: '#1D64C6',
-      lpn: 'ABC-1234',
-      model: 'Tesla Model 3',
-      status: 'Parked',
-      slot: 'Slot A-12',
-      time: '14:00 - 16:00',
-    },
-    {
-      id: '2',
-      name: 'Sarah Rogers',
-      initials: 'SR',
-      avatarBg: '#FEF3C7',
-      avatarColor: '#D97706',
-      lpn: 'XYZ-9876',
-      model: 'Audi E-Tron',
-      status: 'Expected',
-      slot: 'Slot B-04',
-      time: '16:30 - 18:30',
-    },
-    {
-      id: '3',
-      name: 'David Kim',
-      initials: 'DK',
-      avatarBg: '#FEE2E2',
-      avatarColor: '#EF4444',
-      lpn: 'EVO-4421',
-      model: 'BMW i4',
-      status: 'Overdue',
-      slot: 'Slot C-22',
-      time: '15:00 (Alert)',
-      isOverdue: true,
-    },
-  ]);
+  const FALLBACK_BOOKINGS = [
+    { id: '1', name: 'Marcus Holloway', initials: 'MH', avatarBg: '#EFF6FF', avatarColor: '#1D64C6', lpn: 'ABC-1234', model: 'Tesla Model 3', status: 'Parked', slot: 'Slot A-12', time: '14:00 - 16:00' },
+    { id: '2', name: 'Sarah Rogers', initials: 'SR', avatarBg: '#FEF3C7', avatarColor: '#D97706', lpn: 'XYZ-9876', model: 'Audi E-Tron', status: 'Expected', slot: 'Slot B-04', time: '16:30 - 18:30' },
+    { id: '3', name: 'David Kim', initials: 'DK', avatarBg: '#FEE2E2', avatarColor: '#EF4444', lpn: 'EVO-4421', model: 'BMW i4', status: 'Overdue', slot: 'Slot C-22', time: '15:00 (Alert)', isOverdue: true },
+  ];
+  const [bookings, setBookings] = useState(FALLBACK_BOOKINGS);
+
+  useEffect(() => {
+    async function loadLiveBookings() {
+      try {
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            booking_id, booking_code, status, start_time, end_time,
+            users (full_name),
+            parking_slots (slot_number),
+            vehicles (vehicle_number, model_name)
+          `)
+          .in('status', ['CONFIRMED', 'CHECKED_IN', 'PENDING'])
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map((b) => {
+            const name = b.users?.full_name || 'Customer';
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            const statusMap = { CONFIRMED: 'Expected', CHECKED_IN: 'Parked', PENDING: 'Expected' };
+            return {
+              id: String(b.booking_id),
+              name,
+              initials,
+              avatarBg: '#EFF6FF',
+              avatarColor: '#1D64C6',
+              lpn: b.vehicles?.vehicle_number || 'N/A',
+              model: b.vehicles?.model_name || 'Vehicle',
+              status: statusMap[b.status] || b.status,
+              slot: b.parking_slots?.slot_number || 'Auto-Assign',
+              time: `${new Date(b.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(b.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`,
+            };
+          });
+          setBookings(mapped);
+        }
+      } catch (e) {
+        console.log('BookingsList Supabase load error:', e);
+      }
+    }
+    loadLiveBookings();
+
+    // Real-time: reload full list whenever a booking is added or updated
+    const channel = realtimeService.subscribeToBookings((payload) => {
+      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        loadLiveBookings();
+      }
+      if (payload.eventType === 'UPDATE' && payload.new?.status === 'COMPLETED') {
+        setBookings((prev) => prev.filter((b) => b.id !== String(payload.new.booking_id)));
+      }
+    });
+
+    return () => realtimeService.unsubscribe(channel);
+  }, []);
 
   const handleActionPress = (booking) => {
     if (booking.status === 'Expected') {
-      // Check in
-      setBookings(prev => 
+      setBookings(prev =>
         prev.map(b => b.id === booking.id ? { ...b, status: 'Parked', time: 'Just Now - 2 Hours' } : b)
       );
       Alert.alert('Checked In', `${booking.name} has been checked in successfully!`);
     } else {
-      // Check out
       setBookings(prev => prev.filter(b => b.id !== booking.id));
       Alert.alert('Checked Out', `${booking.name} has been checked out successfully!`);
     }

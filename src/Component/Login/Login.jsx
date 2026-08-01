@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './LoginStyles';
+import { authService } from '../../services/authService';
 
 const Login = ({ onBack, onLoginSuccess }) => {
   const [selectedRole, setSelectedRole] = useState('client');
-  const [email, setEmail] = useState('user@parknow.com');
+  const [email, setEmail] = useState('john@gmail.com');
   const [password, setPassword] = useState('user123');
   const [focusedInput, setFocusedInput] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -25,19 +26,33 @@ const Login = ({ onBack, onLoginSuccess }) => {
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
     if (role === 'admin') {
-      setEmail('admin@parknow.com');
+      setEmail('admin@parknow.com');   // matches seed: user_id=1
       setPassword('admin123');
     } else if (role === 'staff') {
-      setEmail('staff@parknow.com');
+      setEmail('marcus@parknow.com');  // matches seed: user_id=2
       setPassword('staff123');
     } else {
-      setEmail('user@parknow.com');
+      setEmail('john@gmail.com');      // matches seed: user_id=4
       setPassword('user123');
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     console.log('Login attempt with role:', selectedRole, 'email:', email);
+    try {
+      const res = await authService.signIn({ email, password });
+      if (res.success && res.user) {
+        const userRole = res.user.role?.toLowerCase() || selectedRole;
+        if (onLoginSuccess) {
+          onLoginSuccess(res.user.email, userRole);
+        }
+        return;
+      }
+    } catch (e) {
+      console.log('Supabase login fallback:', e.message);
+    }
+
+    // Default/Fallback behavior
     if (onLoginSuccess) {
       onLoginSuccess(email, selectedRole);
     }

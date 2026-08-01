@@ -8,12 +8,14 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Navbar from '../components/navbar';
 import { styles } from './ManualBookingStyles';
+import { supabase } from '../../../config/supabase';
 
 const getTodayDateString = (offsetDays = 0) => {
   const d = new Date();
@@ -50,7 +52,13 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
   const [outDate, setOutDate] = useState(getTodayDateString(0));
   const [inTime, setInTime] = useState(getCurrentDeviceTimeString());
   const [outTime, setOutTime] = useState('12:00 PM');
-  const [availableSlot, setAvailableSlot] = useState('Level 1 - A-102 (Standard)');
+
+  // ── Live slot state ──────────────────────────────────────────────────────
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null); // { slot_id, slot_number }
+  const [showSlotModal, setShowSlotModal] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Custom Date Picker Modal States
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -84,6 +92,32 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
     if (ampm === 'am' && hours === 12) hours = 0;
     return { hours, minutes };
   };
+
+  // ── Fetch available slots from Supabase on mount ───────────────────────────
+  useEffect(() => {
+    async function fetchSlots() {
+      setLoadingSlots(true);
+      try {
+        const { data, error } = await supabase
+          .from('parking_slots')
+          .select('slot_id, slot_number, slot_type, floor_level, parking_locations(name)')
+          .eq('status', 'AVAILABLE')
+          .eq('is_active', true)
+          .order('slot_number', { ascending: true });
+        if (!error && data) {
+          setAvailableSlots(data);
+          if (data.length > 0 && !selectedSlot) {
+            setSelectedSlot(data[0]);
+          }
+        }
+      } catch (e) {
+        console.log('ManualBooking fetchSlots error:', e.message);
+      } finally {
+        setLoadingSlots(false);
+      }
+    }
+    fetchSlots();
+  }, []);
 
   useEffect(() => {
     if (duration === 'Custom') return;
@@ -178,32 +212,108 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
 
   const computedHours = calculateCustomHours(inDate, inTime, outDate, outTime);
 
-  const handleProceedPayment = () => {
+  // ── Convert DD/MM/YYYY + HH:MM AM/PM → ISO string ─────────────────────────
+  const toISOString = (dateStr, timeStr) => {
+    const d = parseDateString(dateStr);
+    const t = parseTimeString(timeStr);
+    if (!d || !t) return new Date().toISOString();
+    d.setHours(t.hours, t.minutes, 0, 0);
+    return d.toISOString();
+  };
+
+  const handleProceedPayment = async () => {
     if (!customerName.trim() || !vehicleNumber.trim()) {
       Alert.alert('Missing Information', 'Please fill in Customer Name and Vehicle Number.');
       return;
     }
-
-    let finalDuration = duration;
-    if (duration === 'Custom') {
-      if (computedHours === null || isNaN(computedHours)) {
-        Alert.alert('Invalid Time format', 'Please check In-Time and Out-Time formatting (e.g. 10:00 AM).');
-        return;
-      }
-      finalDuration = `${computedHours} Hours (Custom)`;
+    if (!selectedSlot) {
+      Alert.alert('No Slot Selected', 'Please select an available parking slot.');
+      return;
     }
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    if (onBookingSuccess) {
-      onBookingSuccess({
-        name: customerName,
-        lpn: vehicleNumber.toUpperCase(),
-        slotClass: vehicleType.split(' / ')[0],
-        lot: 'Central Plaza',
-        zone: 'Zone A',
-        slotNum: 'A-102',
-        time: finalDuration,
-        payment: 'PAID',
-      });
+    try {
+      const startTime = toISOString(inDate, inTime);
+      const endTime   = toISOString(outDate, outTime);
+      const bookingCode = `PN-ST-${Math.floor(10000 + Math.random() * 90000)}`;
+
+      // 1. Get or create a guest user record for walk-in customer
+      let userId = 4; // default fallback user_id
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('phone', phoneNumber.trim() || '0000000000')
+        .single();
+      if (existingUser?.user_id) userId = existingUser.user_id;
+
+      // 2. Upsert vehicle record
+      const { data: vehicle } = await supabase
+        .from('vehicles')
+        .upsert([{
+          user_id: userId,
+          vehicle_number: vehicleNumber.trim().toUpperCase(),
+          vehicle_type: '4-WHEELER',
+          model_name: vehicleType,
+          status: 'ACTIVE',
+        }], { onConflict: 'vehicle_number' })
+        .select('vehicle_id')
+        .single();
+
+      const vehicleId = vehicle?.vehicle_id || 1;
+
+      // 3. Insert booking record
+      const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert([{
+          booking_code:  bookingCode,
+          user_id:       userId,
+          location_id:   selectedSlot.location_id || 1,
+          slot_id:       selectedSlot.slot_id,
+          vehicle_id:    vehicleId,
+          start_time:    startTime,
+          end_time:      endTime,
+          total_amount:  0,
+          booking_type:  'MANUAL_SPOT',  // valid enum: ONLINE | MANUAL_SPOT
+          status:        'CONFIRMED',
+        }])
+        .select()
+        .single();
+
+      if (bookingError) throw bookingError;
+
+      // 4. Mark slot as RESERVED → triggers Realtime on ALL subscribed pages
+      await supabase
+        .from('parking_slots')
+        .update({ status: 'RESERVED' })
+        .eq('slot_id', selectedSlot.slot_id);
+
+      // 5. Notify parent and navigate
+      Alert.alert(
+        '✅ Booking Created',
+        `Booking ${bookingCode} created for ${customerName}.\nSlot ${selectedSlot.slot_number} is now reserved.`,
+        [{ text: 'OK' }]
+      );
+
+      if (onBookingSuccess) {
+        onBookingSuccess({
+          name:          customerName,
+          lpn:           vehicleNumber.trim().toUpperCase(),
+          slotClass:     vehicleType.split(' / ')[0],
+          lot:           selectedSlot.parking_locations?.name || 'Central Plaza',
+          zone:          `Zone ${selectedSlot.slot_number?.charAt(0) || 'A'}`,
+          slotNum:       selectedSlot.slot_number || 'A-101',
+          time:          duration,
+          payment:       'PENDING',
+          bookingCode:   bookingCode,
+          bookingId:     booking?.booking_id,
+        });
+      }
+    } catch (e) {
+      console.error('ManualBooking submit error:', e);
+      Alert.alert('Booking Failed', e.message || 'Could not create booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -212,7 +322,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
       Alert.alert('Missing Information', 'Please fill in Customer Name and Vehicle Number.');
       return;
     }
-    Alert.alert('Slot Assigned', `Slot A-102 has been pre-assigned to vehicle ${vehicleNumber.toUpperCase()}. Proceed to payment to complete booking.`);
+    Alert.alert('Slot Assigned', `Slot ${selectedSlot?.slot_number || 'A-101'} has been pre-assigned to vehicle ${vehicleNumber.toUpperCase()}. Proceed to payment to complete booking.`);
   };
 
   return (
@@ -433,15 +543,51 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
             </View>
           )}
 
+          {/* ── Live Slot Picker ──────────────────────────────────── */}
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputLabel}>Assign Parking Slot</Text>
+            <TouchableOpacity
+              style={styles.dropdownBox}
+              activeOpacity={0.8}
+              onPress={() => setShowSlotModal(true)}
+            >
+              <View style={styles.dropdownLeft}>
+                <MaterialCommunityIcons name="parking" size={20} color="#0052cc" style={{ marginRight: 10 }} />
+                {loadingSlots ? (
+                  <ActivityIndicator size="small" color="#0052cc" />
+                ) : (
+                  <Text style={[styles.dropdownValueText, { color: selectedSlot ? '#1E293B' : '#94A3B8' }]}>
+                    {selectedSlot
+                      ? `${selectedSlot.slot_number}  •  ${selectedSlot.slot_type || 'Standard'}  •  Floor ${selectedSlot.floor_level || 'P1'}`
+                      : availableSlots.length === 0 ? 'No slots available' : 'Select a slot...'}
+                  </Text>
+                )}
+              </View>
+              <Feather name="chevron-down" size={16} color="#64748B" />
+            </TouchableOpacity>
+            {availableSlots.length > 0 && (
+              <Text style={{ fontSize: 11, color: '#22C55E', marginTop: 4, marginLeft: 2 }}>
+                ✓ {availableSlots.length} slots available
+              </Text>
+            )}
+          </View>
+
           {/* Form Actions */}
           <View style={{ marginTop: 24 }}>
-            <TouchableOpacity 
-              style={styles.proceedPaymentBtn}
+            <TouchableOpacity
+              style={[styles.proceedPaymentBtn, (isSubmitting || !selectedSlot) && { opacity: 0.6 }]}
               onPress={handleProceedPayment}
               activeOpacity={0.85}
+              disabled={isSubmitting || !selectedSlot}
             >
-              <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.proceedPaymentBtnText}>Assign Slot</Text>
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+              ) : (
+                <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.proceedPaymentBtnText}>
+                {isSubmitting ? 'Creating Booking...' : 'Confirm & Assign Slot'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -512,6 +658,73 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
                 )}
               </TouchableOpacity>
             ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Live Slot Selection Modal ──────────────────────────────────── */}
+      <Modal
+        visible={showSlotModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSlotModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSlotModal(false)}
+        >
+          <View style={[styles.pickerModalContent, { maxHeight: '70%' }]}>
+            <View style={styles.pickerHeader}>
+              <View>
+                <Text style={styles.pickerHeaderTitle}>Select Parking Slot</Text>
+                <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                  {availableSlots.length} available slots
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowSlotModal(false)}>
+                <Feather name="x" size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {availableSlots.map((slot) => (
+                <TouchableOpacity
+                  key={slot.slot_id}
+                  style={[
+                    styles.pickerOptionItem,
+                    selectedSlot?.slot_id === slot.slot_id && styles.pickerOptionItemActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedSlot(slot);
+                    setShowSlotModal(false);
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[
+                      styles.pickerOptionText,
+                      selectedSlot?.slot_id === slot.slot_id && styles.pickerOptionTextActive,
+                      { fontWeight: '700' },
+                    ]}>
+                      {slot.slot_number}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                      {slot.slot_type || 'Standard'} • Floor {slot.floor_level || 'P1'} • {slot.parking_locations?.name || 'Main Lot'}
+                    </Text>
+                  </View>
+                  {selectedSlot?.slot_id === slot.slot_id && (
+                    <Feather name="check" size={16} color="#0052cc" style={{ marginLeft: 8 }} />
+                  )}
+                </TouchableOpacity>
+              ))}
+              {availableSlots.length === 0 && (
+                <View style={{ alignItems: 'center', padding: 32 }}>
+                  <MaterialCommunityIcons name="car-off" size={36} color="#CBD5E1" />
+                  <Text style={{ marginTop: 10, color: '#94A3B8', fontSize: 14 }}>
+                    No available slots right now
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>

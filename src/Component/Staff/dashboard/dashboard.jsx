@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -15,18 +15,60 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Navbar from '../components/navbar';
 import { styles } from './dashboardstyles';
+import { parkingService } from '../../../services/parkingService';
+import { realtimeService } from '../../../services/realtimeService';
 
 const Dashboard = ({
-  availableSlots = 142,
-  occupiedSlots = 358,
-  reservedSlots = 25,
-  todaysTotal = 1204,
   recentActivity = [],
   onNavigateToScanner,
   onNavigateToManualBooking,
   onNavigateToScreen
 }) => {
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [liveSlots, setLiveSlots] = useState({
+    available: 0,
+    occupied: 0,
+    reserved: 0,
+    total: 0,
+  });
+
+  useEffect(() => {
+    async function loadSlots() {
+      try {
+        const res = await parkingService.getOccupancySummary();
+        if (res.success && res.data && res.data.length > 0) {
+          const totals = res.data.reduce(
+            (acc, loc) => ({
+              available: acc.available + (loc.available_slots || 0),
+              occupied: acc.occupied + (loc.occupied_slots || 0),
+              reserved: acc.reserved + (loc.reserved_slots || 0),
+              total: acc.total + (loc.total_slots || 0),
+            }),
+            { available: 0, occupied: 0, reserved: 0, total: 0 }
+          );
+          setLiveSlots(totals);
+        }
+      } catch (e) {
+        console.log('Dashboard slot load error:', e);
+      }
+    }
+    loadSlots();
+
+    // Real-time: Re-fetch occupancy summary whenever any slot changes
+    const slotChannel = realtimeService.subscribeToSlots(1, () => {
+      loadSlots();
+    });
+
+    // Real-time: Re-fetch whenever new booking comes in
+    const bookingChannel = realtimeService.subscribeToBookings(() => {
+      loadSlots();
+    });
+
+    return () => {
+      realtimeService.unsubscribe(slotChannel);
+      realtimeService.unsubscribe(bookingChannel);
+    };
+  }, []);
 
   const handleNotificationPress = () => {
     Alert.alert('Notifications', 'No new notifications at this time.');
@@ -102,7 +144,7 @@ const Dashboard = ({
                   <Text style={[styles.badgeText, { color: '#16A34A' }]}>+4%</Text>
                 </View>
               </View>
-              <Text style={styles.cardValue}>{availableSlots}</Text>
+              <Text style={styles.cardValue}>{liveSlots.available}</Text>
               <Text style={styles.cardLabel}>AVAILABLE SLOTS</Text>
             </View>
 
@@ -114,7 +156,7 @@ const Dashboard = ({
                   <Text style={[styles.badgeText, { color: '#2563EB' }]}>Busy</Text>
                 </View>
               </View>
-              <Text style={styles.cardValue}>{occupiedSlots}</Text>
+              <Text style={styles.cardValue}>{liveSlots.occupied}</Text>
               <Text style={styles.cardLabel}>OCCUPIED SLOTS</Text>
             </View>
           </View>
@@ -129,7 +171,7 @@ const Dashboard = ({
                   <Text style={[styles.badgeText, { color: '#D97706' }]}>12 Expiring</Text>
                 </View>
               </View>
-              <Text style={styles.cardValue}>{reservedSlots}</Text>
+              <Text style={styles.cardValue}>{liveSlots.reserved}</Text>
               <Text style={styles.cardLabel}>RESERVED SLOTS</Text>
             </View>
 
@@ -138,7 +180,7 @@ const Dashboard = ({
               <View style={styles.cardHeader}>
                 <Feather name="bar-chart-2" size={22} color="#4B5563" />
               </View>
-              <Text style={styles.cardValue}>{todaysTotal.toLocaleString()}</Text>
+              <Text style={styles.cardValue}>{liveSlots.total.toLocaleString()}</Text>
               <Text style={styles.cardLabel}>TODAY'S TOTAL</Text>
             </View>
           </View>

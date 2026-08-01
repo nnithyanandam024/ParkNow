@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import { styles } from './DashBoardStyles';
+import { adminService } from '../../../services/adminService';
+import { parkingService } from '../../../services/parkingService';
+import { realtimeService } from '../../../services/realtimeService';
 
 const DashBoard = ({ setActiveTab }) => {
   const [notifications, setNotifications] = useState([
@@ -25,7 +28,17 @@ const DashBoard = ({ setActiveTab }) => {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showLotsModal, setShowLotsModal] = useState(false);
 
-  // Mock Bookings Data
+  // Live stats from Supabase
+  const [dashStats, setDashStats] = useState({
+    totalLots: 0,
+    totalSlots: 0,
+    availableSlots: 0,
+    occupiedSlots: 0,
+    todaysBookings: 0,
+    todaysRevenue: 0,
+  });
+
+  // Fallback static data
   const bookingsData = [
     { id: 'BK-9921', user: 'John Doe', slot: 'Lot A-102', time: '09:30 AM', status: 'Confirmed' },
     { id: 'BK-9922', user: 'Jane Smith', slot: 'Lot B-204', time: '10:15 AM', status: 'Pending' },
@@ -34,7 +47,6 @@ const DashBoard = ({ setActiveTab }) => {
     { id: 'BK-9925', user: 'Michael Brown', slot: 'Lot B-108', time: '12:30 PM', status: 'Cancelled' },
   ];
 
-  // Mock Users Data
   const usersData = [
     { id: 'U-001', name: 'John Doe', email: 'john@example.com', bookings: 12, rating: '4.8' },
     { id: 'U-002', name: 'Jane Smith', email: 'jane@example.com', bookings: 5, rating: '4.9' },
@@ -43,12 +55,47 @@ const DashBoard = ({ setActiveTab }) => {
     { id: 'U-005', name: 'Marcus Chen', email: 'marcus@example.com', bookings: 14, rating: '5.0' },
   ];
 
-  // Mock Lots Data
   const lotsData = [
     { id: 'L-A', name: 'Lot A - Plaza Center', totalSlots: 500, occupiedSlots: 412, status: 'Active' },
     { id: 'L-B', name: 'Lot B - Waterfront', totalSlots: 600, occupiedSlots: 510, status: 'Active' },
     { id: 'L-C', name: 'Lot C - Lincoln Hub', totalSlots: 440, occupiedSlots: 400, status: 'Maintenance' },
   ];
+
+  useEffect(() => {
+    async function loadDashboardStats() {
+      try {
+        const occupancyRes = await parkingService.getOccupancySummary();
+        if (occupancyRes.success && occupancyRes.data) {
+          const summary = occupancyRes.data.reduce(
+            (acc, loc) => ({
+              totalLots: acc.totalLots + 1,
+              totalSlots: acc.totalSlots + (loc.total_slots || 0),
+              availableSlots: acc.availableSlots + (loc.available_slots || 0),
+              occupiedSlots: acc.occupiedSlots + (loc.occupied_slots || 0),
+            }),
+            { totalLots: 0, totalSlots: 0, availableSlots: 0, occupiedSlots: 0 }
+          );
+          setDashStats(prev => ({ ...prev, ...summary }));
+        }
+      } catch (e) {
+        console.log('Dashboard stats load error:', e);
+      }
+    }
+    loadDashboardStats();
+
+    // Real-time: refresh stats whenever slots or bookings change
+    const slotChannel = realtimeService.subscribeToSlots(1, () => {
+      loadDashboardStats();
+    });
+    const bookingChannel = realtimeService.subscribeToBookings(() => {
+      loadDashboardStats();
+    });
+
+    return () => {
+      realtimeService.unsubscribe(slotChannel);
+      realtimeService.unsubscribe(bookingChannel);
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -100,7 +147,7 @@ const DashBoard = ({ setActiveTab }) => {
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Total Lots</Text>
               <View style={styles.statRowContent}>
-                <Text style={styles.statValue}>12</Text>
+                <Text style={styles.statValue}>{dashStats.totalLots || 1}</Text>
                 <FeatherIcon name="map" size={18} color="#6B7280" style={styles.statIcon} />
               </View>
             </View>
@@ -108,7 +155,7 @@ const DashBoard = ({ setActiveTab }) => {
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Total Slots</Text>
               <View style={styles.statRowContent}>
-                <Text style={styles.statValue}>1,540</Text>
+                <Text style={styles.statValue}>{dashStats.totalSlots || 100}</Text>
                 <FeatherIcon name="grid" size={18} color="#6B7280" style={styles.statIcon} />
               </View>
             </View>
@@ -119,7 +166,7 @@ const DashBoard = ({ setActiveTab }) => {
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Available</Text>
               <View style={styles.statRowContent}>
-                <Text style={[styles.statValue, { color: '#10B981' }]}>218</Text>
+                <Text style={[styles.statValue, { color: '#10B981' }]}>{dashStats.availableSlots}</Text>
                 <View style={styles.changeBadge}>
                   <Text style={styles.changeText}>+4%</Text>
                 </View>
@@ -129,7 +176,7 @@ const DashBoard = ({ setActiveTab }) => {
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Occupied</Text>
               <View style={styles.statRowContent}>
-                <Text style={[styles.statValue, { color: '#1A5FB4' }]}>1,322</Text>
+                <Text style={[styles.statValue, { color: '#1A5FB4' }]}>{dashStats.occupiedSlots}</Text>
                 <View style={styles.progressContainer}>
                   <View style={styles.progressBar} />
                 </View>

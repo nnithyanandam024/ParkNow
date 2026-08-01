@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -13,19 +13,38 @@ import {
 } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import { styles } from './SlotManagementStyles';
+import { adminService } from '../../../services/adminService';
+import { parkingService } from '../../../services/parkingService';
 
 const SlotManagement = () => {
   // Admin Slot Inventory State
-  const [slots, setSlots] = useState([
+  const DEFAULT_SLOTS = [
     { id: '1', number: 'A-101', lot: 'Lot A - Central Plaza', type: 'Standard', status: 'Available', rate: '₹80' },
     { id: '2', number: 'A-102', lot: 'Lot A - Central Plaza', type: 'Standard', status: 'Occupied', rate: '₹80' },
     { id: '3', number: 'A-103', lot: 'Lot A - Central Plaza', type: 'EV Charging', status: 'Available', rate: '₹120' },
     { id: '4', number: 'B-101', lot: 'Lot B - Waterfront', type: 'Accessible', status: 'Available', rate: '₹100' },
     { id: '5', number: 'B-102', lot: 'Lot B - Waterfront', type: 'Standard', status: 'Occupied', rate: '₹100' },
     { id: '6', number: 'C-101', lot: 'Lot C - Skyline Hub', type: 'Standard', status: 'Maintenance', rate: '₹90' },
-    { id: '7', number: 'C-102', lot: 'Lot C - Skyline Hub', type: 'EV Charging', status: 'Available', rate: '₹130' },
-    { id: '8', number: 'A-104', lot: 'Lot A - Central Plaza', type: 'Standard', status: 'Available', rate: '₹80' },
-  ]);
+  ];
+  const [slots, setSlots] = useState(DEFAULT_SLOTS);
+
+  useEffect(() => {
+    async function loadSlots() {
+      const res = await parkingService.getSlotsByLocation(1);
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped = res.data.map((s) => ({
+          id: String(s.slot_id),
+          number: s.slot_number,
+          lot: 'Downtown Grand Plaza',
+          type: s.slot_type === 'EV' ? 'EV Charging' : 'Standard',
+          status: s.status.charAt(0) + s.status.slice(1).toLowerCase(),
+          rate: '₹80',
+        }));
+        setSlots(mapped);
+      }
+    }
+    loadSlots();
+  }, []);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All'); // 'All', 'Available', 'Occupied', 'EV Charging', 'Accessible', 'Maintenance'
@@ -66,31 +85,32 @@ const SlotManagement = () => {
   };
 
   // Save Slot (Create or Update)
-  const handleSaveSlot = () => {
+  const handleSaveSlot = async () => {
     if (!formNumber.trim()) {
       Alert.alert('Validation Error', 'Please enter a slot number.');
       return;
     }
 
+    if (!editingSlot) {
+      // Create in Supabase
+      const slotTypeMap = { 'EV Charging': 'EV', 'Standard': '4-WHEELER', 'Accessible': '4-WHEELER' };
+      const res = await adminService.addParkingSlot({
+        locationId: 1,
+        slotNumber: formNumber,
+        floorLevel: 'Ground Floor',
+        slotType: slotTypeMap[formType] || '4-WHEELER',
+      });
+      if (res.success) {
+        Alert.alert('Slot Created', `Slot ${formNumber} added to Supabase database!`);
+      }
+    }
+
     if (editingSlot) {
       setSlots(prev => prev.map(s => s.id === editingSlot.id ? {
-        ...s,
-        number: formNumber,
-        lot: formLot,
-        type: formType,
-        status: formStatus,
-        rate: formRate,
+        ...s, number: formNumber, lot: formLot, type: formType, status: formStatus, rate: formRate,
       } : s));
     } else {
-      const newSlot = {
-        id: Date.now().toString(),
-        number: formNumber,
-        lot: formLot,
-        type: formType,
-        status: formStatus,
-        rate: formRate,
-      };
-      setSlots(prev => [newSlot, ...prev]);
+      setSlots(prev => [{ id: Date.now().toString(), number: formNumber, lot: formLot, type: formType, status: formStatus, rate: formRate }, ...prev]);
     }
     setModalVisible(false);
   };

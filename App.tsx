@@ -74,9 +74,14 @@ const App = () => {
   // Client Navigation State
   const [selectedParking, setSelectedParking] = useState<any>(null);
   const [previousScreenOfSlot, setPreviousScreenOfSlot] = useState('Home');
-  const [selectedSlotId, setSelectedSlotId] = useState<any>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<any>(null); // full slot object
   const [previousScreenOfNavigation, setPreviousScreenOfNavigation] = useState('BookingSuccess');
   const [previousScreenOfPass, setPreviousScreenOfPass] = useState('BookingSuccess');
+
+  // Extract display string safely — never pass raw object into Text components
+  const slotDisplayId: string = typeof selectedSlotId === 'string'
+    ? selectedSlotId
+    : (selectedSlotId?.id ? String(selectedSlotId.id) : 'A-101');
 
   // Staff Check-in / Booking Handlers (from ParkNow-Staff App.jsx)
   const handleCheckIn = (lpn: string) => {
@@ -354,8 +359,9 @@ const App = () => {
                   <SlotSelection
                     parking={selectedParking}
                     onBack={() => setCurrentScreen(previousScreenOfSlot)}
-                    onContinue={(slotId: any) => {
-                      setSelectedSlotId(slotId);
+                    onContinue={(slot: any) => {
+                      // slot is the full slot object: { id, rawId, type, status, zone }
+                      setSelectedSlotId(slot);
                       setCurrentScreen('ConfirmBooking');
                     }}
                   />
@@ -363,7 +369,7 @@ const App = () => {
                 {currentScreen === 'ConfirmBooking' && (
                   <ConfirmBooking
                     parking={selectedParking}
-                    slotId={selectedSlotId}
+                    selectedSlot={selectedSlotId}  // full slot object with rawId
                     onBack={() => setCurrentScreen('SlotSelection')}
                     onConfirm={() => {
                       setCurrentScreen('Payment');
@@ -373,7 +379,7 @@ const App = () => {
                 {currentScreen === 'Payment' && (
                   <Payment
                     parking={selectedParking}
-                    slotId={selectedSlotId}
+                    slotId={slotDisplayId}
                     onBack={() => setCurrentScreen('ConfirmBooking')}
                     onPaySuccess={() => {
                       setCurrentScreen('BookingSuccess');
@@ -383,7 +389,7 @@ const App = () => {
                 {currentScreen === 'BookingSuccess' && (
                   <BookingSuccess
                     parking={selectedParking}
-                    slotId={selectedSlotId}
+                    slotId={slotDisplayId}
                     onDone={() => {
                       setSelectedParking(null);
                       setSelectedSlotId(null);
@@ -402,7 +408,7 @@ const App = () => {
                 {currentScreen === 'BookingPass' && (
                   <BookingPass
                     parking={selectedParking}
-                    slotId={selectedSlotId}
+                    slotId={slotDisplayId}
                     onBack={() => setCurrentScreen(previousScreenOfPass)}
                     onNavigateToSlot={() => {
                       setPreviousScreenOfNavigation('BookingPass');
@@ -413,7 +419,7 @@ const App = () => {
                 {currentScreen === 'Navigation' && (
                   <Navigation
                     parking={selectedParking}
-                    slotId={selectedSlotId}
+                    slotId={slotDisplayId}
                     onBack={() => setCurrentScreen(previousScreenOfNavigation)}
                     onArrive={() => {
                       setSelectedParking(null);

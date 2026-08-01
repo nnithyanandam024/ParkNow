@@ -21,100 +21,8 @@ import { Camera } from 'react-native-camera-kit';
 import VerifiedEntry from '../verifiedEntry/VerifiedEntry';
 import FailedVerification from '../failedVerifiction/FailedVerification';
 import { styles } from './QRScannerStyles';
+import { staffService } from '../../../services/staffService';
 
-// Mock DB of QR Tickets for simulation
-const MOCK_TICKETS = [
-  {
-    code: 'TICKET-101',
-    lpn: 'ABC-1234',
-    name: 'Marcus Holloway',
-    slotClass: 'Regular',
-    type: 'in',
-    status: 'Confirmed',
-    duration: 'N/A (Pre-booked)',
-    fee: 0,
-    lot: 'Central Plaza',
-    zone: 'Zone A',
-    slotNum: 'A-12',
-    time: '10:00 AM - 12:00 PM',
-    payment: 'PAID',
-  },
-  {
-    code: 'TICKET-102',
-    lpn: 'MH-12-PQ-9012',
-    name: 'Sarah Connor',
-    slotClass: 'Regular',
-    type: 'in',
-    status: 'Confirmed',
-    duration: 'N/A (Pre-booked)',
-    fee: 0,
-    lot: 'Central Plaza',
-    zone: 'Zone B',
-    slotNum: 'B-04',
-    time: '11:00 AM - 01:00 PM',
-    payment: 'PAID',
-  },
-  {
-    code: 'TICKET-103',
-    lpn: 'DL-3C-AB-3456',
-    name: 'Bruce Wayne',
-    slotClass: 'EV Charging',
-    type: 'in',
-    status: 'Confirmed',
-    duration: 'N/A (Pre-booked)',
-    fee: 0,
-    lot: 'Central Plaza',
-    zone: 'Zone C',
-    slotNum: 'C-08',
-    time: '02:00 PM - 05:00 PM',
-    payment: 'PAID',
-  },
-  {
-    code: 'TICKET-201',
-    lpn: 'ABC-1234',
-    name: 'Alice Cooper',
-    slotClass: 'Regular',
-    type: 'out',
-    status: 'Checked-In',
-    duration: '3h 15m',
-    fee: 12.50,
-    lot: 'Central Plaza',
-    zone: 'Zone A',
-    slotNum: 'A-12',
-    time: '09:00 AM - 12:15 PM',
-    payment: 'PAID',
-  },
-  {
-    code: 'TICKET-202',
-    lpn: 'XYZ-9876',
-    name: 'Bob Marley',
-    slotClass: 'VIP',
-    type: 'out',
-    status: 'Checked-In',
-    duration: '5h 45m',
-    fee: 25.00,
-    lot: 'Central Plaza',
-    zone: 'Zone V',
-    slotNum: 'V-03',
-    time: '08:00 AM - 01:45 PM',
-    payment: 'PAID',
-  },
-  {
-    code: 'TICKET-999',
-    lpn: 'EXPIRED-09',
-    name: 'Expired User',
-    slotClass: 'Regular',
-    type: 'in',
-    status: 'Expired',
-    duration: 'N/A',
-    fee: 0,
-    lot: 'Central Plaza',
-    zone: 'Zone A',
-    slotNum: 'A-15',
-    time: '07:00 AM - 09:00 AM',
-    payment: 'EXPIRED',
-  },
-];
 
 const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlots, onNavigateToManualBooking }) => {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
@@ -182,20 +90,36 @@ const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlot
   }, [laserAnim]);
 
   // Simulate scanning a code
-  const handleSimulateScan = (codeToScan) => {
+  const handleSimulateScan = async (codeToScan) => {
     if (!codeToScan) return;
-    const ticket = MOCK_TICKETS.find(t => t.code.toUpperCase() === codeToScan.trim().toUpperCase() || t.lpn.toUpperCase() === codeToScan.trim().toUpperCase());
     
-    if (!ticket || ticket.status === 'Expired') {
-      setScanFailedVisible(true);
-      return;
+    try {
+      const dbRes = await staffService.verifyBookingQRCode(codeToScan.trim());
+      if (dbRes.success && dbRes.booking) {
+        const b = dbRes.booking;
+        setScannedTicket({
+          code: b.booking_code,
+          lpn: b.vehicles?.vehicle_number || 'N/A',
+          name: b.users?.full_name || 'Customer',
+          slotClass: 'Regular',
+          type: dbRes.action === 'ENTRY_SCAN' ? 'in' : 'out',
+          status: b.status,
+          lot: b.parking_locations?.name || 'Main Plaza',
+          slotNum: b.parking_slots?.slot_number || 'Slot 1',
+          fee: b.total_amount || 0,
+        });
+        setActionSuccess(false);
+        setModalVisible(true);
+        return;
+      }
+    } catch (err) {
+      console.log('Supabase QR check error:', err);
     }
 
-    // Load ticket details and show popup
-    setScannedTicket(ticket);
-    setActionSuccess(false);
-    setModalVisible(true);
+    // No match in database — show failed scan screen
+    setScanFailedVisible(true);
   };
+
 
   const handleManualSubmit = () => {
     if (!manualCode.trim()) {

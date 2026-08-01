@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -13,6 +13,8 @@ import {
 import { WebView } from 'react-native-webview';
 import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './HomeStyles';
+import { parkingService } from '../../../services/parkingService';
+import { realtimeService } from '../../../services/realtimeService';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
@@ -178,10 +180,61 @@ const buildMapHTML = (spots) => {
 
 const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
   const [activeFilter, setActiveFilter] = useState('nearby');
+  const [parkingSpots, setParkingSpots] = useState(PARKING_SPOTS);
   const webViewRef = useRef(null);
   const flatListRef = useRef(null);
 
-  const mapHTML = buildMapHTML(PARKING_SPOTS);
+  useEffect(() => {
+    async function loadLocations() {
+      try {
+        const res = await parkingService.getParkingLocations();
+        if (res.success && res.data && res.data.length > 0) {
+          const dbSpots = res.data.map((loc, i) => ({
+            id: String(loc.location_id),
+            name: loc.name,
+            rating: 4.8,
+            distance: '0.5 miles away',
+            time: '5 mins',
+            availableSlots: loc.availableSlots ?? loc.total_capacity ?? 10,
+            rate: 100,
+            lat: loc.latitude ? Number(loc.latitude) : 40.7527 + i * 0.005,
+            lng: loc.longitude ? Number(loc.longitude) : -73.9772 + i * 0.005,
+            price: '\u20b9100',
+          }));
+          setParkingSpots(dbSpots);
+        }
+      } catch (err) {
+        console.log('Supabase location load fallback:', err);
+      }
+    }
+    loadLocations();
+
+    // Real-time: when any slot status changes, re-fetch location available counts
+    const channel = realtimeService.subscribeToSlots(1, (payload) => {
+      if (payload.eventType === 'UPDATE' && payload.new) {
+        const updated = payload.new;
+        setParkingSpots((prev) =>
+          prev.map((spot) => {
+            if (String(spot.id) === String(updated.location_id)) {
+              const delta =
+                updated.status === 'AVAILABLE' ? 1
+                : updated.status === 'RESERVED' || updated.status === 'OCCUPIED' ? -1
+                : 0;
+              return {
+                ...spot,
+                availableSlots: Math.max(0, (spot.availableSlots || 0) + delta),
+              };
+            }
+            return spot;
+          })
+        );
+      }
+    });
+
+    return () => realtimeService.unsubscribe(channel);
+  }, []);
+
+  const mapHTML = buildMapHTML(parkingSpots);
 
   const handleMapMessage = (event) => {
     try {
@@ -196,7 +249,7 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
   };
 
   const handleCardScroll = (index) => {
-    const spot = PARKING_SPOTS[index];
+    const spot = parkingSpots[index];
     if (spot && webViewRef.current) {
       webViewRef.current.postMessage(
         JSON.stringify({ type: 'flyTo', lat: spot.lat, lng: spot.lng }),
@@ -358,7 +411,7 @@ const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
       <View style={styles.cardsContainer} pointerEvents="box-none">
         <FlatList
           ref={flatListRef}
-          data={PARKING_SPOTS}
+          data={parkingSpots}
           renderItem={renderParkingCard}
           keyExtractor={(item) => item.id}
           horizontal
