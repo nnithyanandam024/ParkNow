@@ -10,21 +10,38 @@ import {
   StatusBar,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './LoginStyles';
+import { supabase } from '../../supabaseClient';
 
-const Login = ({ onBack, onLoginSuccess }) => {
+const Login = ({ onBack, onLoginSuccess, onNavigateToRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleLogin = () => {
-    console.log('Login attempt with:', email);
-    if (onLoginSuccess) {
-      onLoginSuccess();
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Validation Error', 'Please enter both email and password.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (error) throw error;
+
+      if (onLoginSuccess) {
+        onLoginSuccess(data.user?.email);
+      }
+    } catch (err) {
+      Alert.alert('Login Failed', err.message);
     }
   };
 
@@ -197,12 +214,28 @@ const Login = ({ onBack, onLoginSuccess }) => {
                 <Text style={styles.googleButtonText}>Sign in with Google</Text>
               </TouchableOpacity>
 
+              {/* Demo Admin Login */}
+              <TouchableOpacity
+                style={[styles.googleButton, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB', marginBottom: 16 }]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setEmail('admin@parknow.com');
+                  setPassword('admin123');
+                  if (onLoginSuccess) {
+                    onLoginSuccess('admin@parknow.com');
+                  }
+                }}
+              >
+                <Icon name="shield" size={18} color="#1A5FB4" style={{ marginRight: 8 }} />
+                <Text style={[styles.googleButtonText, { color: '#1A5FB4' }]}>Demo Admin Portal</Text>
+              </TouchableOpacity>
+
               {/* Footer */}
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
                   Don't have an account?{' '}
                 </Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={onNavigateToRegister}>
                   <Text style={styles.registerText}>Register</Text>
                 </TouchableOpacity>
               </View>

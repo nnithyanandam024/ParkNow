@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { styles } from './OpeningStyles';
 
-const Opening = ({ onNavigateToLogin }) => {
+const Opening = ({ onNavigateToLogin, onCreateAccount }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
@@ -48,7 +48,7 @@ const Opening = ({ onNavigateToLogin }) => {
 
       {/* Action Buttons */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.primaryButton}>
+        <TouchableOpacity style={styles.primaryButton} onPress={onCreateAccount}>
           <Text style={styles.primaryButtonText}>Create Account</Text>
         </TouchableOpacity>
         
