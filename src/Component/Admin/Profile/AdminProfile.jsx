@@ -8,9 +8,10 @@ import {
   Image,
   ScrollView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
-import { styles } from './AdminProfileStyles.js';
+import { styles } from './AdminProfileStyles';
 
 const AdminProfile = ({ onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -46,6 +47,16 @@ const AdminProfile = ({ onLogout }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
+      
+      {/* Top Status Bar Offset View */}
+      <View style={styles.statusBarBg} />
+
+      {/* Header Content Row */}
+      <View style={styles.headerRow}>
+        <Text style={styles.headerTitle}> </Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Visual */}
         <View style={styles.profileHeaderCard}>
@@ -139,26 +150,24 @@ const AdminProfile = ({ onLogout }) => {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>SHIFT ASSIGNMENT</Text>
-            <Text style={styles.valueTextReadOnly}>{shift}</Text>
+            <Text style={styles.valueText}>{shift}</Text>
           </View>
 
           <View style={[styles.fieldGroup, { borderBottomWidth: 0 }]}>
             <Text style={styles.label}>ACCESS PRIVILEGES</Text>
-            <Text style={styles.valueTextReadOnly}>Read, Write, Edit (All Lots)</Text>
+            <Text style={styles.valueText}>Read, Write, Edit (All Lots)</Text>
           </View>
         </View>
 
         {/* Actions section */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogoutPress}
-            activeOpacity={0.8}
-          >
-            <FeatherIcon name="log-out" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.logoutButtonText}>Sign Out of Portal</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.logoutBtn}
+          onPress={handleLogoutPress}
+          activeOpacity={0.8}
+        >
+          <FeatherIcon name="log-out" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+          <Text style={styles.logoutText}>Sign Out of Portal</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

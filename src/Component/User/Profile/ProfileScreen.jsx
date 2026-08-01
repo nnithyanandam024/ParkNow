@@ -60,7 +60,10 @@ const ProfileScreen = ({ onLogout, onNavigateToBookings }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
+
+      {/* Top Status Bar Background Spacer */}
+      <View style={styles.statusBarBg} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -71,7 +74,7 @@ const ProfileScreen = ({ onLogout, onNavigateToBookings }) => {
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
         <TouchableOpacity style={styles.editBtn} activeOpacity={0.7}>
-          <FeatherIcon name="edit-2" size={18} color="#1A1D20" />
+          <FeatherIcon name="edit-2" size={16} color="#0052cc" />
         </TouchableOpacity>
       </View>
 
@@ -97,7 +100,7 @@ const ProfileScreen = ({ onLogout, onNavigateToBookings }) => {
 
           <View style={[styles.infoRow, { marginBottom: 16 }]}>
             <View style={styles.infoIconBg}>
-              <FeatherIcon name="mail" size={18} color="#1A5FB4" />
+              <FeatherIcon name="mail" size={18} color="#0052cc" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Email</Text>
@@ -107,7 +110,7 @@ const ProfileScreen = ({ onLogout, onNavigateToBookings }) => {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIconBg}>
-              <FeatherIcon name="phone" size={18} color="#1A5FB4" />
+              <FeatherIcon name="phone" size={18} color="#0052cc" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Phone</Text>
@@ -118,38 +121,36 @@ const ProfileScreen = ({ onLogout, onNavigateToBookings }) => {
 
         {/* Menu list Card */}
         <View style={[styles.card, { paddingVertical: 6 }]}>
-          {menuItems.map((item, index) => {
-            const isLast = index === menuItems.length - 1;
-            return (
-              <View key={item.id}>
-                <TouchableOpacity
-                  style={styles.menuRow}
-                  activeOpacity={0.7}
-                  onPress={item.onPress}
-                >
-                  <View style={styles.menuRowLeft}>
-                    <FeatherIcon
-                      name={item.icon}
-                      size={20}
-                      color={item.isDanger ? '#DC2626' : '#4B5563'}
-                      style={styles.menuIcon}
-                    />
-                    <Text style={[styles.menuText, item.isDanger && styles.menuTextLogout]}>
-                      {item.label}
-                    </Text>
-                  </View>
-                  {!item.isDanger && (
-                    <FeatherIcon name="chevron-right" size={18} color="#9CA3AF" />
-                  )}
-                </TouchableOpacity>
-                {!isLast && <View style={styles.menuDivider} />}
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.menuItem,
+                index < menuItems.length - 1 && { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+              ]}
+              onPress={item.onPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIconBg, item.isDanger && { backgroundColor: '#FEE2E2' }]}>
+                  <FeatherIcon
+                    name={item.icon}
+                    size={16}
+                    color={item.isDanger ? '#EF4444' : '#0052cc'}
+                  />
+                </View>
+                <Text style={[styles.menuLabel, item.isDanger && { color: '#EF4444' }]}>
+                  {item.label}
+                </Text>
               </View>
-            );
-          })}
+              <FeatherIcon
+                name="chevron-right"
+                size={16}
+                color={item.isDanger ? '#EF4444' : '#94A3B8'}
+              />
+            </TouchableOpacity>
+          ))}
         </View>
-
-        {/* App Version Footer */}
-        <Text style={styles.appVersion}>PARKNOW v2.4.0 (PRO)</Text>
       </ScrollView>
     </SafeAreaView>
   );

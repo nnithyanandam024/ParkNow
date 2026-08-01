@@ -13,7 +13,7 @@ import Navigation from './src/Component/User/Navigation/Navigation';
 import BookingsScreen from './src/Component/User/Bookings/BookingsScreen';
 import ProfileScreen from './src/Component/User/Profile/ProfileScreen';
 import BottomTabBar from './src/Component/User/BottomTabBar/BottomTabBar';
-import { View } from 'react-native';
+import { View, StatusBar } from 'react-native';
 import Register from './src/Component/Register/Register';
 import { supabase } from './src/supabaseClient';
 
@@ -108,10 +108,11 @@ const App = () => {
   const showTabBar = currentScreen !== 'Opening' && currentScreen !== 'Login' && currentScreen !== 'Register';
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
       {showTabBar ? (
-        <View style={{ flex: 1 }}>
-          <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {isAdmin ? (
               <>
                 {adminTab === 'Dashboard' && (
@@ -305,7 +306,7 @@ const App = () => {
           )}
         </>
       )}
-    </>
+    </View>
   );
 };
 

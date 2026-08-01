@@ -53,14 +53,15 @@ const DashBoard = ({ setActiveTab }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <View style={styles.statusBarSpacer} />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity style={styles.iconButton}>
-            <FeatherIcon name="menu" size={24} color="#1A1D20" />
+            <FeatherIcon name="menu" size={24} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>NaN</Text>
+          <Text style={styles.headerTitle}>ParkNow Admin</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity 
@@ -158,125 +159,115 @@ const DashBoard = ({ setActiveTab }) => {
 
         {/* Quick Actions */}
         <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 16 }]}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          <View style={styles.actionsRow}>
-            {/* Action 1 - Manage Lots */}
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              activeOpacity={0.8}
-              onPress={() => setShowLotsModal(true)}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: '#E0F2FE' }]}>
-                <FeatherIcon name="map-pin" size={20} color="#0284C7" />
-              </View>
-              <Text style={styles.actionLabel}>Manage Lots</Text>
-            </TouchableOpacity>
+        <View style={styles.quickActionsGrid}>
+          <TouchableOpacity 
+            style={styles.quickActionCard} 
+            activeOpacity={0.8}
+            onPress={() => setShowLotsModal(true)}
+          >
+            <View style={[styles.quickActionIconCircle, { backgroundColor: '#EFF6FF' }]}>
+              <FeatherIcon name="map-pin" size={18} color="#0052cc" />
+            </View>
+            <Text style={styles.quickActionTitle}>Manage Lots</Text>
+          </TouchableOpacity>
 
-            {/* Action 2 - Manage Slots */}
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              activeOpacity={0.8}
-              onPress={() => setActiveTab('SlotMgmt')}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: '#EEF2FF' }]}>
-                <Text style={styles.actionTextP}>P</Text>
-              </View>
-              <Text style={styles.actionLabel}>Manage Slots</Text>
-            </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickActionCard} 
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('SlotMgmt')}
+          >
+            <View style={[styles.quickActionIconCircle, { backgroundColor: '#D1FAE5' }]}>
+              <FeatherIcon name="layers" size={18} color="#16A34A" />
+            </View>
+            <Text style={styles.quickActionTitle}>Manage Slots</Text>
+          </TouchableOpacity>
 
-            {/* Action 3 - Staff Mgmt */}
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              activeOpacity={0.8}
-              onPress={() => setActiveTab('StaffMgmt')}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: '#F0FDF4' }]}>
-                <FeatherIcon name="users" size={20} color="#16A34A" />
-              </View>
-              <Text style={styles.actionLabel}>Staff Mgmt</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={styles.quickActionCard} 
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('StaffMgmt')}
+          >
+            <View style={[styles.quickActionIconCircle, { backgroundColor: '#EFF6FF' }]}>
+              <FeatherIcon name="users" size={18} color="#0052cc" />
+            </View>
+            <Text style={styles.quickActionTitle}>Staff Mgmt</Text>
+          </TouchableOpacity>
 
-          <View style={styles.actionsRow}>
-            {/* Action 4 - Bookings */}
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              activeOpacity={0.8}
-              onPress={() => setShowBookingsModal(true)}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: '#FEF3C7' }]}>
-                <FeatherIcon name="bookmark" size={20} color="#D97706" />
-              </View>
-              <Text style={styles.actionLabel}>Bookings</Text>
-            </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickActionCard} 
+            activeOpacity={0.8}
+            onPress={() => setShowBookingsModal(true)}
+          >
+            <View style={[styles.quickActionIconCircle, { backgroundColor: '#FEF3C7' }]}>
+              <FeatherIcon name="bookmark" size={18} color="#D97706" />
+            </View>
+            <Text style={styles.quickActionTitle}>Bookings</Text>
+          </TouchableOpacity>
 
-            {/* Action 5 - Users */}
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              activeOpacity={0.8}
-              onPress={() => setShowUsersModal(true)}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: '#FCE7F3' }]}>
-                <FeatherIcon name="user" size={20} color="#DB2777" />
-              </View>
-              <Text style={styles.actionLabel}>Users</Text>
-            </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickActionCard} 
+            activeOpacity={0.8}
+            onPress={() => setShowUsersModal(true)}
+          >
+            <View style={[styles.quickActionIconCircle, { backgroundColor: '#FCE7F3' }]}>
+              <FeatherIcon name="user" size={18} color="#DB2777" />
+            </View>
+            <Text style={styles.quickActionTitle}>Users</Text>
+          </TouchableOpacity>
 
-            {/* Action 6 - Analytics */}
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              activeOpacity={0.8}
-              onPress={() => setShowAnalyticsModal(true)}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: '#F3E8FF' }]}>
-                <FeatherIcon name="bar-chart-2" size={20} color="#9333EA" />
-              </View>
-              <Text style={styles.actionLabel}>Analytics</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={[styles.sectionHeader, { marginTop: 28 }]}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity onPress={() => Alert.alert('History', 'Viewing all older activities.')}>
-            <Text style={styles.viewAllLink}>View All</Text>
+          <TouchableOpacity 
+            style={styles.quickActionCard} 
+            activeOpacity={0.8}
+            onPress={() => setShowAnalyticsModal(true)}
+          >
+            <View style={[styles.quickActionIconCircle, { backgroundColor: '#F3E8FF' }]}>
+              <FeatherIcon name="bar-chart-2" size={18} color="#9333EA" />
+            </View>
+            <Text style={styles.quickActionTitle}>Analytics</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.activityList}>
+        {/* Recent Activity */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <TouchableOpacity onPress={() => Alert.alert('History', 'Viewing all older activities.')}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0052cc' }}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.activityCard}>
           {/* Activity 1 */}
-          <View style={styles.activityItem}>
-            <View style={[styles.activityIconWrapper, { backgroundColor: '#DCFCE7' }]}>
-              <FeatherIcon name="check-circle" size={16} color="#16A34A" />
+          <View style={styles.activityRow}>
+            <View style={[styles.activityIconCircle, { backgroundColor: '#DCFCE7' }]}>
+              <FeatherIcon name="check-circle" size={18} color="#16A34A" />
             </View>
-            <View style={styles.activityDetails}>
-              <Text style={styles.activityUser}>John Doe - Lot A-102</Text>
-              <Text style={styles.activityAction}>New booking confirmed</Text>
+            <View style={styles.activityTextCol}>
+              <Text style={styles.activityTitle}>John Doe - Lot A-102</Text>
+              <Text style={styles.activitySubtitle}>New booking confirmed</Text>
             </View>
             <Text style={styles.activityTime}>2 mins ago</Text>
           </View>
 
           {/* Activity 2 */}
-          <View style={styles.activityItem}>
-            <View style={[styles.activityIconWrapper, { backgroundColor: '#E0F2FE' }]}>
-              <FeatherIcon name="dollar-sign" size={16} color="#0284C7" />
+          <View style={styles.activityRow}>
+            <View style={[styles.activityIconCircle, { backgroundColor: '#EFF6FF' }]}>
+              <FeatherIcon name="dollar-sign" size={18} color="#0052cc" />
             </View>
-            <View style={styles.activityDetails}>
-              <Text style={styles.activityUser}>$15.00 collected - Lot B-05</Text>
-              <Text style={styles.activityAction}>Payment successful</Text>
+            <View style={styles.activityTextCol}>
+              <Text style={styles.activityTitle}>₹150.00 collected - Lot B-05</Text>
+              <Text style={styles.activitySubtitle}>Payment successful</Text>
             </View>
             <Text style={styles.activityTime}>10 mins ago</Text>
           </View>
 
           {/* Activity 3 */}
-          <View style={styles.activityItem}>
-            <View style={[styles.activityIconWrapper, { backgroundColor: '#FFEDD5' }]}>
-              <FeatherIcon name="tool" size={16} color="#EA580C" />
+          <View style={[styles.activityRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.activityIconCircle, { backgroundColor: '#FEF3C7' }]}>
+              <FeatherIcon name="tool" size={18} color="#D97706" />
             </View>
-            <View style={styles.activityDetails}>
-              <Text style={styles.activityUser}>Marcus Chen updated Lot C</Text>
-              <Text style={styles.activityAction}>Status: Maintenance</Text>
+            <View style={styles.activityTextCol}>
+              <Text style={styles.activityTitle}>Marcus Chen updated Lot C</Text>
+              <Text style={styles.activitySubtitle}>Status: Maintenance</Text>
             </View>
             <Text style={styles.activityTime}>30 mins ago</Text>
           </View>
@@ -425,15 +416,65 @@ const DashBoard = ({ setActiveTab }) => {
               </TouchableOpacity>
             </View>
             <ScrollView style={{ padding: 8 }}>
-              <Text style={styles.analyticsTitle}>Weekly Slot Occupancy Trend</Text>
-              <View style={styles.analyticsChartMock}>
-                <View style={[styles.chartBar, { height: 120 }]}><Text style={styles.chartBarLabel}>Mon</Text></View>
-                <View style={[styles.chartBar, { height: 140 }]}><Text style={styles.chartBarLabel}>Tue</Text></View>
-                <View style={[styles.chartBar, { height: 130 }]}><Text style={styles.chartBarLabel}>Wed</Text></View>
-                <View style={[styles.chartBar, { height: 160 }]}><Text style={styles.chartBarLabel}>Thu</Text></View>
-                <View style={[styles.chartBar, { height: 180 }]}><Text style={styles.chartBarLabel}>Fri</Text></View>
-                <View style={[styles.chartBar, { height: 195 }]}><Text style={styles.chartBarLabel}>Sat</Text></View>
-                <View style={[styles.chartBar, { height: 150 }]}><Text style={styles.chartBarLabel}>Sun</Text></View>
+              <View style={styles.analyticsChartContainer}>
+                <Text style={styles.analyticsTitle}>Weekly Slot Occupancy Trend</Text>
+                <View style={styles.chartBarsRow}>
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>65%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '65%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Mon</Text>
+                  </View>
+
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>78%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '78%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Tue</Text>
+                  </View>
+
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>70%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '70%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Wed</Text>
+                  </View>
+
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>85%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '85%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Thu</Text>
+                  </View>
+
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>92%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '92%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Fri</Text>
+                  </View>
+
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>98%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '98%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Sat</Text>
+                  </View>
+
+                  <View style={styles.chartColumn}>
+                    <Text style={styles.barValLabel}>80%</Text>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: '80%' }]} />
+                    </View>
+                    <Text style={styles.barDayLabel}>Sun</Text>
+                  </View>
+                </View>
               </View>
               <Text style={styles.analyticsSubtitle}>Average Occupancy Rate: 84%</Text>
               <Text style={[styles.analyticsSubtitle, { marginTop: 12 }]}>Revenue Distribution</Text>

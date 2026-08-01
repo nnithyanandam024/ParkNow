@@ -5,9 +5,9 @@ import { styles } from './AdminBottomTabBarStyles';
 
 const AdminBottomTabBar = ({ activeTab, setActiveTab }) => {
   const tabs = [
-    { id: 'Dashboard', label: 'Dashboard', icon: 'layout' },
-    { id: 'SlotMgmt', label: 'Slot Mgmt', icon: 'layers' },
-    { id: 'StaffMgmt', label: 'Staff Mgmt', icon: 'users' },
+    { id: 'Dashboard', label: 'Dashboard', icon: 'grid' },
+    { id: 'SlotMgmt', label: 'Slots', icon: 'layers' },
+    { id: 'StaffMgmt', label: 'Staff', icon: 'users' },
     { id: 'Profile', label: 'Profile', icon: 'user' },
   ];
 
@@ -18,20 +18,20 @@ const AdminBottomTabBar = ({ activeTab, setActiveTab }) => {
         return (
           <TouchableOpacity
             key={tab.id}
-            style={styles.tabItem}
+            style={isActive ? styles.activeTabItem : styles.tabItem}
             activeOpacity={0.8}
             onPress={() => setActiveTab(tab.id)}
           >
-            <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
-              <FeatherIcon
-                name={tab.icon}
-                size={20}
-                color={isActive ? '#1A5FB4' : '#6B7280'}
-              />
-            </View>
-            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-              {tab.label}
-            </Text>
+            <FeatherIcon
+              name={tab.icon}
+              size={20}
+              color={isActive ? '#16A34A' : '#6B7280'}
+            />
+            {isActive ? (
+              <Text style={styles.activeTabLabel}>{tab.label}</Text>
+            ) : (
+              <Text style={styles.tabLabel}>{tab.label}</Text>
+            )}
           </TouchableOpacity>
         );
       })}

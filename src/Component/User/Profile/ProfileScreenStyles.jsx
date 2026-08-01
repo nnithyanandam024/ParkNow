@@ -1,19 +1,22 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, StatusBar } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFBFD',
   },
+  statusBarBg: {
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 8 : 44,
+    backgroundColor: '#FFFFFF',
+  },
 
   /* ───── Header ───── */
   header: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : (Platform.OS === 'ios' ? 44 : 16),
-    paddingBottom: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F2F5',
@@ -23,33 +26,37 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: '#1A5FB4',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   logoBadgeText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
+    color: '#FFFFFF',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#1A5FB4',
+    color: '#0F172A',
   },
   editBtn: {
-    padding: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   /* ───── Scroll Area ───── */
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 40,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 110 : 90,
   },
 
   /* ───── Avatar Section ───── */
@@ -59,75 +66,76 @@ export const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-    width: 104,
-    height: 104,
     marginBottom: 12,
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 52,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: '#DBEAFE',
   },
   cameraBtn: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1A5FB4',
+    backgroundColor: '#0052cc',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2.5,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
   userName: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A1D20',
+    color: '#0F172A',
     marginBottom: 4,
   },
   userMeta: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '600',
   },
 
-  /* ───── Account Card ───── */
+  /* ───── Card Container ───── */
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EBF0F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   cardLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#1A5FB4',
-    letterSpacing: 0.8,
-    marginBottom: 16,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 14,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   infoIconBg: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F3F4F6',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -136,51 +144,40 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '600',
-    marginBottom: 1,
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+    marginBottom: 2,
   },
   infoValue: {
     fontSize: 14,
-    color: '#1A1D20',
+    color: '#0F172A',
     fontWeight: '700',
   },
 
-  /* ───── Settings Menu Card ───── */
-  menuRow: {
+  /* ───── Menu Item ───── */
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
-  menuRowLeft: {
+  menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  menuIcon: {
+  menuIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
-  menuText: {
-    fontSize: 15,
-    color: '#1A1D20',
-    fontWeight: '600',
-  },
-  menuTextLogout: {
-    color: '#DC2626',
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-  },
-
-  /* ───── App Version Footer ───── */
-  appVersion: {
-    fontSize: 11,
-    color: '#9CA3AF',
+  menuLabel: {
+    fontSize: 14,
     fontWeight: '700',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    marginTop: 12,
+    color: '#0F172A',
   },
 });
