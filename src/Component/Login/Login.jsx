@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './LoginStyles';
 
-const Login = ({ onBack }) => {
+const Login = ({ onBack, onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
@@ -23,6 +23,9 @@ const Login = ({ onBack }) => {
 
   const handleLogin = () => {
     console.log('Login attempt with:', email);
+    if (onLoginSuccess) {
+      onLoginSuccess();
+    }
   };
 
   return (
