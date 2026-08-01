@@ -13,38 +13,32 @@ import Navbar from '../components/navbar';
 import { styles } from './SlotAssignmentStyles';
 
 const SlotAssignment = ({ pendingBooking, onBack, onFinalizeAssignment, onNavigateToScanner, onNavigateToScreen }) => {
-  // Mock layout slots with coordinate rows
-  // status: 'available', 'occupied', 'maintenance'
+
   const [slots, setSlots] = useState([
-    // Top Row (T-01 to T-10)
     ...Array.from({ length: 10 }, (_, i) => ({
       id: `T-${(i + 1).toString().padStart(2, '0')}`,
       type: 'Standard',
       status: i === 2 || i === 7 ? 'maintenance' : 'available',
       zone: 'Central Plaza P1',
     })),
-    // Left Lane (L-01 to L-08)
     ...Array.from({ length: 8 }, (_, i) => ({
       id: `L-${(i + 1).toString().padStart(2, '0')}`,
       type: 'Standard',
-      status: i === 0 ? 'available' : 'occupied', // L-01 available, others occupied with cars
+      status: i === 0 ? 'available' : 'occupied', 
       zone: 'Central Plaza P1',
     })),
-    // Aisle A (A-01 to A-16) - Double side
     ...Array.from({ length: 16 }, (_, i) => ({
       id: `A-${(i + 1).toString().padStart(2, '0')}`,
       type: i % 4 === 0 ? 'Electric' : 'Standard',
       status: i < 8 ? 'occupied' : (i === 11 ? 'maintenance' : 'available'),
       zone: 'Central Plaza P1',
     })),
-    // Aisle B (B-01 to B-16) - Double side
     ...Array.from({ length: 16 }, (_, i) => ({
       id: `B-${(i + 1).toString().padStart(2, '0')}`,
       type: 'Standard',
       status: i % 3 === 0 ? 'occupied' : 'available',
       zone: 'Central Plaza P1',
     })),
-    // Right Lane (R-01 to R-08)
     ...Array.from({ length: 8 }, (_, i) => ({
       id: `R-${(i + 1).toString().padStart(2, '0')}`,
       type: 'Standard',

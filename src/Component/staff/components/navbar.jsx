@@ -50,19 +50,6 @@ const Navbar = ({ activeTab, onTabPress }) => {
           <Text style={styles.tabLabel}>Scanner</Text>
         )}
       </TouchableOpacity>
-
-      {/* Profile Tab */}
-      <TouchableOpacity
-        style={activeTab === 'Profile' ? styles.activeTabItem : styles.tabItem}
-        onPress={() => onTabPress('Profile')}
-      >
-        <Feather name="user" size={20} color={activeTab === 'Profile' ? '#16A34A' : '#6B7280'} />
-        {activeTab === 'Profile' ? (
-          <Text style={styles.activeTabLabel}>Profile</Text>
-        ) : (
-          <Text style={styles.tabLabel}>Profile</Text>
-        )}
-      </TouchableOpacity>
     </View>
   );
 };

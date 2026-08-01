@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StatusBar, BackHandler } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Opening from './src/Component/Opening_page/Opening';
 import Login from './src/Component/Login/Login';
@@ -68,6 +68,61 @@ const App = () => {
       isOverdue: true,
     },
   ]);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (currentScreen === 'Login') {
+        setCurrentScreen('Opening');
+        return true;
+      }
+      if (currentScreen === 'Dashboard') {
+        // Return false to exit the app from Dashboard
+        return false;
+      }
+      if (currentScreen === 'Bookings') {
+        setCurrentScreen('Dashboard');
+        return true;
+      }
+      if (currentScreen === 'BookingDetails') {
+        setCurrentScreen('Bookings');
+        setViewingBooking(null);
+        return true;
+      }
+      if (currentScreen === 'QRScanner') {
+        if (checkoutBooking) {
+          setCurrentScreen('Bookings');
+          setCheckoutBooking(null);
+        } else {
+          setCurrentScreen('Dashboard');
+        }
+        return true;
+      }
+      if (currentScreen === 'SlotAssignment') {
+        setCurrentScreen('Dashboard');
+        return true;
+      }
+      if (currentScreen === 'ManualBooking') {
+        setCurrentScreen('Dashboard');
+        return true;
+      }
+      if (currentScreen === 'CollectPayment') {
+        setCurrentScreen('Dashboard');
+        return true;
+      }
+      if (currentScreen === 'BookingSuccess') {
+        setCurrentScreen('Dashboard');
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [currentScreen, checkoutBooking, viewingBooking]);
 
   const getSafeAreaBg = () => {
     if (currentScreen === 'Login') return '#1D64C6';

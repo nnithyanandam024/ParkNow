@@ -352,14 +352,6 @@ const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlot
               >
                 <MaterialCommunityIcons name={flashOn ? "flashlight" : "flashlight-off"} size={22} color="#FFFFFF" />
               </TouchableOpacity>
-
-              <TouchableOpacity 
-                onPress={() => Alert.alert('Gallery', 'Photo Library is not available in emulator mode.')} 
-                style={styles.circleButton}
-                activeOpacity={0.75}
-              >
-                <Feather name="image" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
             </View>
 
             {/* Manual Entry Main Button */}
