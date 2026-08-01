@@ -189,7 +189,7 @@ const Navigation = ({ parking, slotId, onBack, onArrive }) => {
           <Image
             source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150' }}
             style={styles.avatarImage}
-            defaultSource={require('../../../images/login_illustration.png')} // Fallback in case of no net
+            defaultSource={require('../../../images/login_illustration.jpg')} // Fallback in case of no net
           />
         </View>
       </View>

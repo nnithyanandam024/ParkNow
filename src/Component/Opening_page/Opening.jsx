@@ -25,7 +25,7 @@ const Opening = ({ onNavigateToLogin }) => {
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
         <Image
-          source={require('../../assets/illustration.png')}
+          source={require('../../assets/illustration.jpg')}
           style={styles.illustration}
           resizeMode="contain"
         />

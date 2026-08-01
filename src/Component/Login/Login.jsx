@@ -88,7 +88,7 @@ const Login = ({ onBack, onLoginSuccess }) => {
               </View>
               {/* Illustration image */}
               <Image
-                source={require('../../assets/illustration.png')}
+                source={require('../../assets/illustration.jpg')}
                 style={styles.bannerImage}
                 resizeMode="contain"
               />

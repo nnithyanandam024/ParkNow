@@ -115,7 +115,7 @@ const App = () => {
 
   const handleStaffBookingSuccess = (booking: any) => {
     setPendingBooking(booking);
-    setStaffScreen('SlotAssignment');
+    setStaffScreen('BookingSuccess');
   };
 
   const handleFinalizeAssignment = (booking: any) => {

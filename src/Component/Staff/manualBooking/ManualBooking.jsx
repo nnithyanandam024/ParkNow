@@ -235,7 +235,8 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
 
     try {
       const startTime = toISOString(inDate, inTime);
-      const endTime   = toISOString(outDate, outTime);
+      // Even if outDate or outTime is null/empty, confirm booking with end_time = null (Open-ended)
+      const endTime   = (duration === 'Open Slot' || !outDate || !outTime) ? null : toISOString(outDate, outTime);
       const bookingCode = `PN-ST-${Math.floor(10000 + Math.random() * 90000)}`;
 
       // 1. Get or create a guest user record for walk-in customer
@@ -262,6 +263,13 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
 
       const vehicleId = vehicle?.vehicle_id || 1;
 
+      // Calculate total amount: Base Fee ₹150 + ₹100/hr
+      let calculatedAmount = 150;
+      if (duration === '2 Hours') calculatedAmount += 200;
+      else if (duration === '4 Hours') calculatedAmount += 400;
+      else if (duration === 'Full Day') calculatedAmount += 1200;
+      else if (duration === 'Custom' && computedHours) calculatedAmount += Math.round(computedHours * 100);
+
       // 3. Insert booking record
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
@@ -273,7 +281,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
           vehicle_id:    vehicleId,
           start_time:    startTime,
           end_time:      endTime,
-          total_amount:  0,
+          total_amount:  calculatedAmount,
           booking_type:  'MANUAL_SPOT',  // valid enum: ONLINE | MANUAL_SPOT
           status:        'CONFIRMED',
         }])
@@ -445,7 +453,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Booking Duration</Text>
             <View style={styles.chipsRow}>
-              {['2 Hours', '4 Hours', 'Full Day', 'Custom'].map((opt) => (
+              {['2 Hours', '4 Hours', 'Full Day', 'Custom', 'Open Slot'].map((opt) => (
                 <TouchableOpacity
                   key={opt}
                   style={[styles.chip, duration === opt ? styles.chipActive : styles.chipInactive]}
@@ -482,7 +490,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
               <View style={[styles.inputWrapper, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.inputLabel}>Out-Date</Text>
                 <TouchableOpacity 
-                  style={[styles.inputFieldBox, duration !== 'Custom' && { backgroundColor: '#F1F5F9' }]}
+                  style={[styles.inputFieldBox, (duration !== 'Custom') && { backgroundColor: '#F1F5F9' }]}
                   activeOpacity={duration === 'Custom' ? 0.8 : 1}
                   onPress={() => {
                     if (duration === 'Custom') {
@@ -494,7 +502,9 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
                   }}
                 >
                   <Feather name="calendar" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
-                  <Text style={[styles.datePickerValueText, duration !== 'Custom' && { color: '#64748B' }]}>{outDate}</Text>
+                  <Text style={[styles.datePickerValueText, (duration !== 'Custom') && { color: '#64748B' }]}>
+                    {duration === 'Open Slot' ? 'Open Ended' : outDate}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -519,7 +529,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
               <View style={[styles.inputWrapper, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.inputLabel}>Out-Time</Text>
                 <TouchableOpacity 
-                  style={[styles.inputFieldBox, duration !== 'Custom' && { backgroundColor: '#F1F5F9' }]}
+                  style={[styles.inputFieldBox, (duration !== 'Custom') && { backgroundColor: '#F1F5F9' }]}
                   activeOpacity={duration === 'Custom' ? 0.8 : 1}
                   onPress={() => {
                     if (duration === 'Custom') {
@@ -529,7 +539,9 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
                   }}
                 >
                   <Feather name="clock" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
-                  <Text style={[styles.datePickerValueText, duration !== 'Custom' && { color: '#64748B' }]}>{outTime}</Text>
+                  <Text style={[styles.datePickerValueText, (duration !== 'Custom') && { color: '#64748B' }]}>
+                    {duration === 'Open Slot' ? 'Open Ended' : outTime}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -542,6 +554,41 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
               </Text>
             </View>
           )}
+
+          {duration === 'Open Slot' && (
+            <View style={[styles.computedHoursBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+              <Feather name="zap" size={14} color="#0052cc" style={{ marginRight: 6 }} />
+              <Text style={styles.computedHoursText}>
+                Mode: <Text style={{ fontWeight: '800', color: '#0052cc' }}>Open Slot (Pay on Exit upon vehicle checkout)</Text>
+              </Text>
+            </View>
+          )}
+
+          {/* ── Rate Card Banner ────────────────────────────────── */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#F8FAFC',
+            borderRadius: 10,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: '#E2E8F0',
+            marginBottom: 16,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="tag-outline" size={18} color="#0052cc" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>Rate Card:</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E40AF' }}>Base Fee: ₹150</Text>
+              </View>
+              <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#15803D' }}>+ ₹100 / hr</Text>
+              </View>
+            </View>
+          </View>
 
           {/* ── Live Slot Picker ──────────────────────────────────── */}
           <View style={styles.inputWrapper}>
