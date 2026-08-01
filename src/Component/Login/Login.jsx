@@ -15,22 +15,37 @@ import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './LoginStyles';
 
 const Login = ({ onBack, onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState('client');
+  const [email, setEmail] = useState('user@parknow.com');
+  const [password, setPassword] = useState('user123');
   const [focusedInput, setFocusedInput] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    if (role === 'admin') {
+      setEmail('admin@parknow.com');
+      setPassword('admin123');
+    } else if (role === 'staff') {
+      setEmail('staff@parknow.com');
+      setPassword('staff123');
+    } else {
+      setEmail('user@parknow.com');
+      setPassword('user123');
+    }
+  };
 
   const handleLogin = () => {
-    console.log('Login attempt with:', email);
+    console.log('Login attempt with role:', selectedRole, 'email:', email);
     if (onLoginSuccess) {
-      onLoginSuccess();
+      onLoginSuccess(email, selectedRole);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1D64C6" />
+      <StatusBar barStyle="light-content" backgroundColor="#0052cc" />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -64,8 +79,8 @@ const Login = ({ onBack, onLoginSuccess }) => {
               />
               {/* Overlay text */}
               <View style={styles.bannerOverlay}>
-                <Text style={styles.bannerTitle}>ParkNow</Text>
-                <Text style={styles.bannerSubtitle}>Secure Parking Access</Text>
+                <Text style={styles.bannerTitle}>ParkNow Ecosystem</Text>
+                <Text style={styles.bannerSubtitle}>Multi-Role Unified Access</Text>
               </View>
             </View>
           </View>
@@ -80,17 +95,83 @@ const Login = ({ onBack, onLoginSuccess }) => {
                 </View>
                 <Text style={styles.logoText}>ParkNow</Text>
               </View>
-              <Text style={styles.title}>Secure Parking Access</Text>
+              <Text style={styles.title}>Unified Portal Login</Text>
               <Text style={styles.subtitle}>
-                Sign in to manage your urban parking effortlessly.
+                Select your access role to proceed into the workspace.
               </Text>
+            </View>
+
+            {/* Role Selection Bar */}
+            <View style={styles.roleSelectorGroup}>
+              <Text style={styles.label}>SELECT ACCESS ROLE</Text>
+              <View style={styles.roleSelectorRow}>
+                <TouchableOpacity
+                  style={[styles.rolePill, selectedRole === 'client' && styles.rolePillActive]}
+                  onPress={() => handleRoleSelect('client')}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name="user"
+                    size={16}
+                    color={selectedRole === 'client' ? '#0052cc' : '#64748B'}
+                  />
+                  <Text
+                    style={[
+                      styles.rolePillText,
+                      selectedRole === 'client' && styles.rolePillTextActive,
+                    ]}
+                  >
+                    Client
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.rolePill, selectedRole === 'staff' && styles.rolePillActive]}
+                  onPress={() => handleRoleSelect('staff')}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name="briefcase"
+                    size={16}
+                    color={selectedRole === 'staff' ? '#0052cc' : '#64748B'}
+                  />
+                  <Text
+                    style={[
+                      styles.rolePillText,
+                      selectedRole === 'staff' && styles.rolePillTextActive,
+                    ]}
+                  >
+                    Staff
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.rolePill, selectedRole === 'admin' && styles.rolePillActive]}
+                  onPress={() => handleRoleSelect('admin')}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name="shield"
+                    size={16}
+                    color={selectedRole === 'admin' ? '#0052cc' : '#64748B'}
+                  />
+                  <Text
+                    style={[
+                      styles.rolePillText,
+                      selectedRole === 'admin' && styles.rolePillTextActive,
+                    ]}
+                  >
+                    Admin
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Form */}
             <View style={styles.formContainer}>
               {/* Email */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>Email Address</Text>
                 <View
                   style={[
                     styles.inputWrapper,
@@ -178,7 +259,9 @@ const Login = ({ onBack, onLoginSuccess }) => {
                 onPress={handleLogin}
                 activeOpacity={0.85}
               >
-                <Text style={styles.loginButtonText}>Login</Text>
+                <Text style={styles.loginButtonText}>
+                  Login as {selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}
+                </Text>
               </TouchableOpacity>
 
               {/* Divider */}

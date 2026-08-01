@@ -1,0 +1,221 @@
+import { StyleSheet, Platform, StatusBar } from 'react-native';
+
+export const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  statusBarBg: {
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 8 : 44,
+    backgroundColor: '#FFFFFF',
+  },
+  headerRow: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0052cc',
+    marginHorizontal: 20,
+  },
+
+  /* ───── Scroll Area ───── */
+  scrollContent: {
+    padding: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 110 : 90,
+  },
+
+  /* ───── Profile Header Card ───── */
+  profileHeaderCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 26,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: '#DBEAFE',
+    marginBottom: 12,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  profileRole: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0052cc',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1.0,
+  },
+  badgeContainer: {
+    marginTop: 12,
+  },
+  activeBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#16A34A',
+  },
+
+  /* ───── Stats Row ───── */
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statsCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  statsVal: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  statsLbl: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 4,
+  },
+
+  /* ───── Details Card ───── */
+  detailsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  detailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 8,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  editBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0052cc',
+  },
+  fieldGroup: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  input: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '600',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  valueText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+
+  /* ───── Logout Button ───── */
+  logoutBtn: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: 20,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    marginTop: 10,
+  },
+  logoutText: {
+    color: '#EF4444',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+});

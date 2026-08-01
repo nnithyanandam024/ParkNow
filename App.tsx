@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import { View, StatusBar } from 'react-native';
+
+// Auth Components
 import Opening from './src/Component/Opening_page/Opening';
 import Login from './src/Component/Login/Login';
+
+// User / Client Components
 import Home from './src/Component/User/Home/Home';
 import Search from './src/Component/User/Search/Search';
 import ParkingDetail from './src/Component/User/ParkingDetail/ParkingDetail';
@@ -13,16 +18,122 @@ import Navigation from './src/Component/User/Navigation/Navigation';
 import BookingsScreen from './src/Component/User/Bookings/BookingsScreen';
 import ProfileScreen from './src/Component/User/Profile/ProfileScreen';
 import BottomTabBar from './src/Component/User/BottomTabBar/BottomTabBar';
-import { View } from 'react-native';
+
+// Staff Components (Exact ParkNow-Staff integration)
+import StaffDashboard from './src/Component/Staff/dashboard/dashboard';
+import StaffBookingsList from './src/Component/Staff/BookingsList';
+import StaffManualBooking from './src/Component/Staff/manualBooking/ManualBooking';
+import StaffQrScanner from './src/Component/Staff/qr sacnner/QRScanner';
+import StaffSlotAssignment from './src/Component/Staff/slotAssignment/SlotAssignment';
+import StaffCollectPayment from './src/Component/Staff/collectPayment/CollectPayment';
+import StaffBookingSuccess from './src/Component/Staff/bookingSuccess/BookingSuccess';
+import Navbar from './src/Component/Staff/components/navbar';
+
+// Admin Components
+import DashBoard from './src/Component/Admin/DashBoard/DashBoard';
+import SlotManagement from './src/Component/Admin/SlotManagement/SlotManagement';
+import StaffManagement from './src/Component/Admin/StaffManagement/StaffManagement';
+import AdminProfile from './src/Component/Admin/Profile/AdminProfile';
+import AdminBottomTabBar from './src/Component/Admin/AdminBottomTabBar';
+
+// Common Workspace Switcher
+import WorkspaceSwitcher from './src/Component/Common/WorkspaceSwitcher';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Opening');
+  const [userRole, setUserRole] = useState<'client' | 'staff' | 'admin'>('admin');
+  const [activeWorkspace, setActiveWorkspace] = useState<'User' | 'Staff' | 'Admin'>('Admin');
+
+  // Admin Navigation State
+  const [adminTab, setAdminTab] = useState('Dashboard');
+
+  // Staff Navigation & State (Identical to ParkNow-Staff)
+  const [staffScreen, setStaffScreen] = useState('Dashboard');
+  const [pendingBooking, setPendingBooking] = useState<any>(null);
+  const [availableSlots, setAvailableSlots] = useState(142);
+  const [occupiedSlots, setOccupiedSlots] = useState(358);
+  const [reservedSlots] = useState(25);
+  const [todaysTotal, setTodaysTotal] = useState(1204);
+  const [recentActivity, setRecentActivity] = useState<any[]>([
+    {
+      id: '1',
+      lpn: 'ABC-1234',
+      details: 'Entry Gate 2 • 09:42 AM',
+      status: 'SUCCESS',
+      type: 'in',
+    },
+    {
+      id: '2',
+      lpn: 'XYZ-9876',
+      details: 'Exit Gate 1 • 09:38 AM',
+      status: '$12.50 PAID',
+      type: 'out',
+    },
+  ]);
+
+  // Client Navigation State
   const [selectedParking, setSelectedParking] = useState<any>(null);
   const [previousScreenOfSlot, setPreviousScreenOfSlot] = useState('Home');
   const [selectedSlotId, setSelectedSlotId] = useState<any>(null);
   const [previousScreenOfNavigation, setPreviousScreenOfNavigation] = useState('BookingSuccess');
-
   const [previousScreenOfPass, setPreviousScreenOfPass] = useState('BookingSuccess');
+
+  // Staff Check-in / Booking Handlers (from ParkNow-Staff App.jsx)
+  const handleCheckIn = (lpn: string) => {
+    setAvailableSlots(prev => Math.max(0, prev - 1));
+    setOccupiedSlots(prev => prev + 1);
+    setTodaysTotal(prev => prev + 1);
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newActivity = {
+      id: Date.now().toString(),
+      lpn: lpn,
+      details: `Entry Gate 2 • ${timeStr}`,
+      status: 'SUCCESS',
+      type: 'in',
+    };
+    setRecentActivity(prev => [newActivity, ...prev]);
+  };
+
+  const handleCheckOut = (lpn: string, amount: number) => {
+    setOccupiedSlots(prev => Math.max(0, prev - 1));
+    setAvailableSlots(prev => prev + 1);
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newActivity = {
+      id: Date.now().toString(),
+      lpn: lpn,
+      details: `Exit Gate 1 • ${timeStr}`,
+      status: `$${amount.toFixed(2)} PAID`,
+      type: 'out',
+    };
+    setRecentActivity(prev => [newActivity, ...prev]);
+  };
+
+  const handleStaffBookingSuccess = (booking: any) => {
+    setPendingBooking(booking);
+    setStaffScreen('SlotAssignment');
+  };
+
+  const handleFinalizeAssignment = (booking: any) => {
+    setPendingBooking(booking);
+    setStaffScreen('CollectPayment');
+  };
+
+  const handleFinalizePayment = (booking: any) => {
+    setAvailableSlots(prev => Math.max(0, prev - 1));
+    setOccupiedSlots(prev => prev + 1);
+    setTodaysTotal(prev => prev + 1);
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newActivity = {
+      id: Date.now().toString(),
+      lpn: booking.lpn,
+      details: `Slot ${booking.slotNum} Assigned (${booking.paymentMethod}) • ${timeStr}`,
+      status: 'SUCCESS',
+      type: 'in',
+    };
+    setRecentActivity(prev => [newActivity, ...prev]);
+    setPendingBooking(booking);
+    setStaffScreen('BookingSuccess');
+  };
 
   const navigateToDetail = (parking: any) => {
     setSelectedParking(parking);
@@ -42,19 +153,27 @@ const App = () => {
     return { lat: 40.7549, lng: -73.9840 };
   };
 
-  const getActiveTab = () => {
-    if (currentScreen === 'Bookings') return 'Bookings';
-    if (currentScreen === 'Profile') return 'Profile';
-    return 'Home';
+  const handleUserTabChange = (tabId: string) => {
+    if (tabId === 'Home') setCurrentScreen('Home');
+    else if (tabId === 'Bookings') setCurrentScreen('Bookings');
+    else if (tabId === 'Profile') setCurrentScreen('Profile');
   };
 
-  const handleTabChange = (tabId: string) => {
-    if (tabId === 'Home') {
+  const handleLoginSuccess = (email?: string, role?: string) => {
+    if ((email && email.toLowerCase().includes('admin')) || role === 'admin') {
+      setUserRole('admin');
+      setActiveWorkspace('Admin');
+      setAdminTab('Dashboard');
       setCurrentScreen('Home');
-    } else if (tabId === 'Bookings') {
-      setCurrentScreen('Bookings');
-    } else if (tabId === 'Profile') {
-      setCurrentScreen('Profile');
+    } else if ((email && email.toLowerCase().includes('staff')) || role === 'staff') {
+      setUserRole('staff');
+      setActiveWorkspace('Staff');
+      setStaffScreen('Dashboard');
+      setCurrentScreen('Home');
+    } else {
+      setUserRole('client');
+      setActiveWorkspace('User');
+      setCurrentScreen('Home');
     }
   };
 
@@ -62,137 +181,255 @@ const App = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent />
+
       {showTabBar ? (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-          <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-            {currentScreen === 'Home' && (
-              <Home
-                onBack={() => setCurrentScreen('Login')}
-                onSearch={() => setCurrentScreen('Search')}
-                onParkingSelect={navigateToDetail}
-                onReserve={navigateToReserve}
+          
+          {/* WORKSPACE 1: ADMIN WORKSPACE */}
+          {activeWorkspace === 'Admin' && (
+            <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+              <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                {adminTab === 'Dashboard' && <DashBoard setActiveTab={setAdminTab} />}
+                {adminTab === 'SlotMgmt' && <SlotManagement />}
+                {adminTab === 'StaffMgmt' && <StaffManagement />}
+                {adminTab === 'Profile' && (
+                  <AdminProfile
+                    onLogout={() => {
+                      setActiveWorkspace('User');
+                      setCurrentScreen('Opening');
+                    }}
+                  />
+                )}
+              </View>
+              <AdminBottomTabBar activeTab={adminTab} setActiveTab={setAdminTab} />
+            </View>
+          )}
+
+          {/* WORKSPACE 2: STAFF WORKSPACE (PARKNOW-STAFF INTEGRATION) */}
+          {activeWorkspace === 'Staff' && (
+            <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+              <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                {staffScreen === 'Dashboard' && (
+                  <StaffDashboard
+                    availableSlots={availableSlots}
+                    occupiedSlots={occupiedSlots}
+                    reservedSlots={reservedSlots}
+                    todaysTotal={todaysTotal}
+                    recentActivity={recentActivity as any}
+                    onNavigateToScanner={() => setStaffScreen('QRScanner')}
+                    onNavigateToManualBooking={() => setStaffScreen('ManualBooking')}
+                    onNavigateToScreen={setStaffScreen}
+                  />
+                )}
+
+                {staffScreen === 'QRScanner' && (
+                  <StaffQrScanner
+                    onBack={() => setStaffScreen('Dashboard')}
+                    onCheckIn={handleCheckIn}
+                    onCheckOut={handleCheckOut}
+                    availableSlots={availableSlots}
+                    occupiedSlots={occupiedSlots}
+                    onNavigateToManualBooking={() => setStaffScreen('ManualBooking')}
+                  />
+                )}
+
+                {staffScreen === 'ManualBooking' && (
+                  <StaffManualBooking
+                    onBack={() => setStaffScreen('Dashboard')}
+                    onBookingSuccess={handleStaffBookingSuccess}
+                    onNavigateToScanner={() => setStaffScreen('QRScanner')}
+                    onNavigateToScreen={setStaffScreen}
+                  />
+                )}
+
+                {staffScreen === 'SlotAssignment' && (
+                  <StaffSlotAssignment
+                    pendingBooking={pendingBooking}
+                    onBack={() => setStaffScreen('Dashboard')}
+                    onFinalizeAssignment={handleFinalizeAssignment}
+                    onNavigateToScanner={() => setStaffScreen('QRScanner')}
+                    onNavigateToScreen={setStaffScreen}
+                  />
+                )}
+
+                {staffScreen === 'CollectPayment' && (
+                  <StaffCollectPayment
+                    pendingBooking={pendingBooking}
+                    onBack={() => setStaffScreen('Dashboard')}
+                    onFinalizePayment={handleFinalizePayment}
+                  />
+                )}
+
+                {staffScreen === 'BookingSuccess' && (
+                  <StaffBookingSuccess
+                    pendingBooking={pendingBooking}
+                    onDone={() => setStaffScreen('Dashboard')}
+                  />
+                )}
+
+                {staffScreen === 'Bookings' && (
+                  <StaffBookingsList
+                    onNavigateToScreen={setStaffScreen}
+                  />
+                )}
+
+                {staffScreen === 'Profile' && (
+                  <View style={{ flex: 1 }}>
+                    <ProfileScreen
+                      // @ts-ignore
+                      onLogout={() => {
+                        setActiveWorkspace('User');
+                        setCurrentScreen('Opening');
+                      }}
+                      // @ts-ignore
+                      onNavigateToBookings={() => setStaffScreen('Bookings')}
+                    />
+                    <Navbar
+                      activeTab="Profile"
+                      onTabPress={(tab: any) => setStaffScreen(tab)}
+                    />
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* WORKSPACE 3: USER / CLIENT WORKSPACE */}
+          {activeWorkspace === 'User' && (
+            <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+              <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                {currentScreen === 'Home' && (
+                  <Home
+                    onBack={() => setCurrentScreen('Login')}
+                    onSearch={() => setCurrentScreen('Search')}
+                    onParkingSelect={navigateToDetail}
+                    onReserve={navigateToReserve}
+                  />
+                )}
+                {currentScreen === 'Bookings' && (
+                  <BookingsScreen
+                    onViewDetails={(parkingName: any, slotId: any) => {
+                      const coords = getSpotCoordinates(parkingName);
+                      setSelectedParking({
+                        name: parkingName,
+                        lat: coords.lat,
+                        lng: coords.lng,
+                      });
+                      setSelectedSlotId(slotId);
+                      setPreviousScreenOfPass('Bookings');
+                      setCurrentScreen('BookingPass');
+                    }}
+                  />
+                )}
+                {currentScreen === 'Profile' && (
+                  <ProfileScreen
+                    // @ts-ignore
+                    onLogout={() => {
+                      setSelectedParking(null);
+                      setSelectedSlotId(null);
+                      setCurrentScreen('Opening');
+                    }}
+                    // @ts-ignore
+                    onNavigateToBookings={() => {
+                      setCurrentScreen('Bookings');
+                    }}
+                  />
+                )}
+                {currentScreen === 'Search' && (
+                  <Search
+                    onBack={() => setCurrentScreen('Home')}
+                    onViewMap={() => setCurrentScreen('Home')}
+                    onParkingSelect={navigateToDetail}
+                  />
+                )}
+                {currentScreen === 'ParkingDetail' && (
+                  <ParkingDetail
+                    parking={selectedParking}
+                    onBack={() => setCurrentScreen(selectedParking?._from || 'Home')}
+                    onReserve={navigateToReserve}
+                  />
+                )}
+                {currentScreen === 'SlotSelection' && (
+                  <SlotSelection
+                    parking={selectedParking}
+                    onBack={() => setCurrentScreen(previousScreenOfSlot)}
+                    onContinue={(slotId: any) => {
+                      setSelectedSlotId(slotId);
+                      setCurrentScreen('ConfirmBooking');
+                    }}
+                  />
+                )}
+                {currentScreen === 'ConfirmBooking' && (
+                  <ConfirmBooking
+                    parking={selectedParking}
+                    slotId={selectedSlotId}
+                    onBack={() => setCurrentScreen('SlotSelection')}
+                    onConfirm={() => {
+                      setCurrentScreen('Payment');
+                    }}
+                  />
+                )}
+                {currentScreen === 'Payment' && (
+                  <Payment
+                    parking={selectedParking}
+                    slotId={selectedSlotId}
+                    onBack={() => setCurrentScreen('ConfirmBooking')}
+                    onPaySuccess={() => {
+                      setCurrentScreen('BookingSuccess');
+                    }}
+                  />
+                )}
+                {currentScreen === 'BookingSuccess' && (
+                  <BookingSuccess
+                    parking={selectedParking}
+                    slotId={selectedSlotId}
+                    onDone={() => {
+                      setSelectedParking(null);
+                      setSelectedSlotId(null);
+                      setCurrentScreen('Home');
+                    }}
+                    onViewQR={() => {
+                      setPreviousScreenOfPass('BookingSuccess');
+                      setCurrentScreen('BookingPass');
+                    }}
+                    onNavigateToSlot={() => {
+                      setPreviousScreenOfNavigation('BookingSuccess');
+                      setCurrentScreen('Navigation');
+                    }}
+                  />
+                )}
+                {currentScreen === 'BookingPass' && (
+                  <BookingPass
+                    parking={selectedParking}
+                    slotId={selectedSlotId}
+                    onBack={() => setCurrentScreen(previousScreenOfPass)}
+                    onNavigateToSlot={() => {
+                      setPreviousScreenOfNavigation('BookingPass');
+                      setCurrentScreen('Navigation');
+                    }}
+                  />
+                )}
+                {currentScreen === 'Navigation' && (
+                  <Navigation
+                    parking={selectedParking}
+                    slotId={selectedSlotId}
+                    onBack={() => setCurrentScreen(previousScreenOfNavigation)}
+                    onArrive={() => {
+                      setSelectedParking(null);
+                      setSelectedSlotId(null);
+                      setCurrentScreen('Home');
+                    }}
+                  />
+                )}
+              </View>
+              <BottomTabBar
+                activeTab={currentScreen === 'Bookings' ? 'Bookings' : currentScreen === 'Profile' ? 'Profile' : 'Home'}
+                setActiveTab={handleUserTabChange}
               />
-            )}
-            {currentScreen === 'Bookings' && (
-              <BookingsScreen
-                onViewDetails={(parkingName: any, slotId: any) => {
-                  const coords = getSpotCoordinates(parkingName);
-                  setSelectedParking({
-                    name: parkingName,
-                    lat: coords.lat,
-                    lng: coords.lng,
-                  });
-                  setSelectedSlotId(slotId);
-                  setPreviousScreenOfPass('Bookings');
-                  setCurrentScreen('BookingPass');
-                }}
-              />
-            )}
-            {currentScreen === 'Profile' && (
-              <ProfileScreen
-                // @ts-ignore
-                onLogout={() => {
-                  setSelectedParking(null);
-                  setSelectedSlotId(null);
-                  setCurrentScreen('Opening');
-                }}
-                // @ts-ignore
-                onNavigateToBookings={() => {
-                  setCurrentScreen('Bookings');
-                }}
-              />
-            )}
-            {currentScreen === 'Search' && (
-              <Search
-                onBack={() => setCurrentScreen('Home')}
-                onViewMap={() => setCurrentScreen('Home')}
-                onParkingSelect={navigateToDetail}
-              />
-            )}
-            {currentScreen === 'ParkingDetail' && (
-              <ParkingDetail
-                parking={selectedParking}
-                onBack={() => setCurrentScreen(selectedParking?._from || 'Home')}
-                onReserve={navigateToReserve}
-              />
-            )}
-            {currentScreen === 'SlotSelection' && (
-              <SlotSelection
-                parking={selectedParking}
-                onBack={() => setCurrentScreen(previousScreenOfSlot)}
-                onContinue={(slotId: any) => {
-                  setSelectedSlotId(slotId);
-                  setCurrentScreen('ConfirmBooking');
-                }}
-              />
-            )}
-            {currentScreen === 'ConfirmBooking' && (
-              <ConfirmBooking
-                parking={selectedParking}
-                slotId={selectedSlotId}
-                onBack={() => setCurrentScreen('SlotSelection')}
-                onConfirm={() => {
-                  setCurrentScreen('Payment');
-                }}
-              />
-            )}
-            {currentScreen === 'Payment' && (
-              <Payment
-                parking={selectedParking}
-                slotId={selectedSlotId}
-                onBack={() => setCurrentScreen('ConfirmBooking')}
-                onPaySuccess={() => {
-                  setCurrentScreen('BookingSuccess');
-                }}
-              />
-            )}
-            {currentScreen === 'BookingSuccess' && (
-              <BookingSuccess
-                parking={selectedParking}
-                slotId={selectedSlotId}
-                onDone={() => {
-                  setSelectedParking(null);
-                  setSelectedSlotId(null);
-                  setCurrentScreen('Home');
-                }}
-                onViewQR={() => {
-                  setPreviousScreenOfPass('BookingSuccess');
-                  setCurrentScreen('BookingPass');
-                }}
-                onNavigateToSlot={() => {
-                  setPreviousScreenOfNavigation('BookingSuccess');
-                  setCurrentScreen('Navigation');
-                }}
-              />
-            )}
-            {currentScreen === 'BookingPass' && (
-              <BookingPass
-                parking={selectedParking}
-                slotId={selectedSlotId}
-                onBack={() => setCurrentScreen(previousScreenOfPass)}
-                onNavigateToSlot={() => {
-                  setPreviousScreenOfNavigation('BookingPass');
-                  setCurrentScreen('Navigation');
-                }}
-              />
-            )}
-            {currentScreen === 'Navigation' && (
-              <Navigation
-                parking={selectedParking}
-                slotId={selectedSlotId}
-                onBack={() => setCurrentScreen(previousScreenOfNavigation)}
-                onArrive={() => {
-                  setSelectedParking(null);
-                  setSelectedSlotId(null);
-                  setCurrentScreen('Home');
-                }}
-              />
-            )}
-          </View>
-          <BottomTabBar
-            activeTab={getActiveTab()}
-            setActiveTab={handleTabChange}
-          />
+            </View>
+          )}
+
         </View>
       ) : (
         <>
@@ -202,7 +439,8 @@ const App = () => {
           {currentScreen === 'Login' && (
             <Login
               onBack={() => setCurrentScreen('Opening')}
-              onLoginSuccess={() => setCurrentScreen('Home')}
+              // @ts-ignore
+              onLoginSuccess={(email?: string, role?: string) => handleLoginSuccess(email, role)}
             />
           )}
         </>

@@ -101,7 +101,7 @@ export const styles = StyleSheet.create({
 
   /* ───── Header / Logo ───── */
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   headerLogoRow: {
     flexDirection: 'row',
@@ -139,6 +139,41 @@ export const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: 20,
     fontWeight: '500',
+  },
+
+  /* ───── Role Selector ───── */
+  roleSelectorGroup: {
+    marginBottom: 20,
+  },
+  roleSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  rolePill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  rolePillActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0052cc',
+  },
+  rolePillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    marginLeft: 6,
+  },
+  rolePillTextActive: {
+    color: '#0052cc',
+    fontWeight: '800',
   },
 
   /* ───── Form ───── */
