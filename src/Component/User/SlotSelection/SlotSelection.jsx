@@ -32,87 +32,104 @@ const groupByZone = (slots) => {
 };
 
 // ── Component ──────────────────────────────────────────────────────────────────
-const SlotSelection = ({ parking, onBack, onContinue }) => {
+const SlotSelection = ({ parking, bookingDetails, onBack, onContinue }) => {
   const facilityName = parking?.name || 'Central Plaza Parking';
-  const locationId   = parking?.id  || 1;
+  const locationId   = Number(String(parking?.id || '1').replace(/\D/g, '')) || 1;
 
-  const [slots, setSlots]               = useState([]);
+  const [slots, setSlots]                   = useState([]);
   const [selectedSlotId, setSelectedSlotId] = useState(null);
-  const [loading, setLoading]           = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'available' | 'ev'
+  const [loading, setLoading]               = useState(true);
+  const [filterStatus, setFilterStatus]     = useState('all'); // 'all' | 'available' | 'ev'
 
-  // ── Load live slots from Supabase ──────────────────────────────────────────
+  // ── Load live slots & check DB for overlapping bookings for selected timeframe ──────────
   const loadLiveSlots = useCallback(async () => {
     try {
-      // Fetch ALL slot types for this location (remove slot_type filter)
-      const { data, error } = await (async () => {
-        const { supabase } = await import('../../../config/supabase');
-        return supabase
-          .from('parking_slots')
-          .select('*')
-          .eq('location_id', locationId)
-          .eq('is_active', true)
-          .order('slot_number', { ascending: true });
-      })();
+      const { supabase } = await import('../../../config/supabase');
 
-      if (error) throw error;
+      // 1. Fetch slots for this location
+      const { data: slotsData, error: errSlots } = await supabase
+        .from('parking_slots')
+        .select('*')
+        .eq('location_id', locationId)
+        .eq('is_active', true)
+        .order('slot_id', { ascending: true });
 
-      if (data && data.length > 0) {
-        const mapped = data.map((s) => ({
-          id:     s.slot_number,
-          rawId:  s.slot_id,
-          type:   s.slot_type === 'EV' ? 'EV Charging' : s.slot_type === 'DISABLED' ? 'Accessible' : 'Standard',
-          status: s.status.toLowerCase(),   // 'available' | 'reserved' | 'occupied' | 'maintenance'
-          zone:   facilityName,
-          floor:  s.floor_level || 'P1',
-        }));
+      if (errSlots) throw errSlots;
+
+      // 2. Fetch overlapping bookings for selected timeframe
+      const userStartIso = bookingDetails?.startTime || new Date().toISOString();
+      const userEndIso   = bookingDetails?.endTime || new Date(Date.now() + 2 * 3600000).toISOString();
+
+      const { data: overlappingBookings } = await supabase
+        .from('bookings')
+        .select('slot_id, status')
+        .eq('location_id', locationId)
+        .in('status', ['CONFIRMED', 'CHECKED_IN'])
+        .lt('start_time', userEndIso)
+        .gt('end_time', userStartIso);
+
+      const bookedSlotIds = new Set(
+        (overlappingBookings || []).map((b) => Number(b.slot_id))
+      );
+
+      if (slotsData && slotsData.length > 0) {
+        const mapped = slotsData.map((s) => {
+          const isBookedInTimeframe = bookedSlotIds.has(Number(s.slot_id));
+          const isMaint = s.status && s.status.toUpperCase() === 'MAINTENANCE';
+
+          let finalStatus = 'available';
+          if (isMaint) {
+            finalStatus = 'maintenance';
+          } else if (isBookedInTimeframe) {
+            finalStatus = 'occupied'; // Blocked only for user's selected date & timeframe
+          }
+
+          return {
+            id:     s.slot_number,
+            rawId:  s.slot_id,
+            type:   s.slot_type === 'EV' ? 'EV Charging' : s.slot_type === 'DISABLED' || s.slot_type === 'ACCESSIBLE' ? 'Accessible' : 'Standard',
+            status: finalStatus, // 'available' | 'occupied' | 'maintenance'
+            zone:   facilityName,
+            floor:  s.floor_level || 'Ground Floor',
+          };
+        });
         setSlots(mapped);
+      } else {
+        // Fallback slots
+        const fallbackSlots = Array.from({ length: 12 }, (_, i) => ({
+          id: `A-${101 + i}`,
+          rawId: 1000 + i,
+          type: i % 5 === 0 ? 'EV Charging' : 'Standard',
+          status: i % 4 === 0 ? 'occupied' : 'available',
+          zone: facilityName,
+          floor: 'Ground Floor',
+        }));
+        setSlots(fallbackSlots);
       }
     } catch (e) {
       console.log('SlotSelection load error:', e.message);
     } finally {
       setLoading(false);
     }
-  }, [locationId, facilityName]);
+  }, [locationId, facilityName, bookingDetails]);
 
   useEffect(() => {
     loadLiveSlots();
 
-    // ── Real-time subscription ─────────────────────────────────────────────
-    const channel = realtimeService.subscribeToSlots(locationId, (payload) => {
-      if (payload.eventType === 'UPDATE' && payload.new) {
-        const updated = payload.new;
-        setSlots((prev) =>
-          prev.map((s) =>
-            s.rawId === updated.slot_id
-              ? { ...s, status: updated.status.toLowerCase() }
-              : s
-          )
-        );
-      }
-      if (payload.eventType === 'INSERT' && payload.new) {
-        const s = payload.new;
-        if (String(s.location_id) === String(locationId)) {
-          setSlots((prev) => [
-            ...prev,
-            {
-              id:    s.slot_number,
-              rawId: s.slot_id,
-              type:  s.slot_type === 'EV' ? 'EV Charging' : 'Standard',
-              status: s.status.toLowerCase(),
-              zone:  facilityName,
-              floor: s.floor_level || 'P1',
-            },
-          ].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })));
-        }
-      }
-      if (payload.eventType === 'DELETE' && payload.old) {
-        setSlots((prev) => prev.filter((s) => s.rawId !== payload.old.slot_id));
-      }
+    // ── Real-time subscription to slots and bookings ────────────────────────
+    const channelSlots = realtimeService.subscribeToSlots(locationId, () => {
+      loadLiveSlots();
     });
 
-    return () => realtimeService.unsubscribe(channel);
-  }, [locationId]);
+    const channelBookings = realtimeService.subscribeToBookings(() => {
+      loadLiveSlots();
+    });
+
+    return () => {
+      realtimeService.unsubscribe(channelSlots);
+      realtimeService.unsubscribe(channelBookings);
+    };
+  }, [locationId, loadLiveSlots]);
 
   // ── Derived state ──────────────────────────────────────────────────────────
   const selectedSlot = slots.find((s) => s.id === selectedSlotId);
@@ -308,9 +325,12 @@ const SlotSelection = ({ parking, onBack, onContinue }) => {
 
         {/* ── Availability Banner ── */}
         <View style={styles.occupancyCard}>
-          <Text style={styles.occupancySubtitle}>FACILITY AVAILABILITY</Text>
+          <Text style={styles.occupancySubtitle}>SCHEDULED DATE & TIMEFRAME</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
+            📅 {bookingDetails?.inDate || 'Today'} • 🕒 {bookingDetails?.inTime || 'Now'} → {bookingDetails?.outTime || 'Open'}
+          </Text>
           <Text style={styles.occupancyTitle}>{availableCount} Slots Available</Text>
-          <View style={{ flexDirection: 'row', marginTop: 4, gap: 6 }}>
+          <View style={{ flexDirection: 'row', marginTop: 4, gap: 6, flexWrap: 'wrap' }}>
             <View style={[styles.chip, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
               <Text style={styles.chipText}>🟢 {availableCount} Free</Text>
             </View>
@@ -395,41 +415,41 @@ const SlotSelection = ({ parking, onBack, onContinue }) => {
             </View>
           </View>
         </View>
-
-        {/* ── Selected Slot Info Panel ── */}
-        <View style={styles.detailsPanel}>
-          {selectedSlot ? (
-            <View style={styles.detailsContent}>
-              <View style={styles.detailsHeaderRow}>
-                <View>
-                  <Text style={styles.detailsSlotId}>Slot {selectedSlot.id}</Text>
-                  <Text style={styles.detailsMetadata}>Facility: {selectedSlot.zone}</Text>
-                  <Text style={styles.detailsMetadata}>Type: {selectedSlot.type} • Floor: {selectedSlot.floor}</Text>
-                </View>
-                <View style={styles.badgeAvailable}>
-                  <Text style={styles.badgeTextAvailable}>Available</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.confirmBtn}
-                onPress={handleProceed}
-                activeOpacity={0.85}
-              >
-                <MaterialCommunityIcons name="credit-card-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text style={styles.confirmBtnText}>Proceed to Confirm Booking</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.detailsPlaceholder}>
-              <Feather name="info" size={20} color="#0052cc" style={{ marginBottom: 6 }} />
-              <Text style={styles.placeholderText}>
-                Select an available parking slot from the spatial map above to reserve.
-              </Text>
-            </View>
-          )}
-        </View>
-
+        <View style={{ height: selectedSlot ? 210 : 150 }} />
       </ScrollView>
+
+      {/* ── Fixed Bottom Selected Slot Info Panel ── */}
+      <View style={styles.fixedBottomPanel}>
+        {selectedSlot ? (
+          <View style={styles.detailsContent}>
+            <View style={styles.detailsHeaderRow}>
+              <View>
+                <Text style={styles.detailsSlotId}>Slot {selectedSlot.id}</Text>
+                <Text style={styles.detailsMetadata}>Facility: {selectedSlot.zone}</Text>
+                <Text style={styles.detailsMetadata}>Type: {selectedSlot.type} • Floor: {selectedSlot.floor}</Text>
+              </View>
+              <View style={styles.badgeAvailable}>
+                <Text style={styles.badgeTextAvailable}>Available</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.confirmBtn}
+              onPress={handleProceed}
+              activeOpacity={0.85}
+            >
+              <MaterialCommunityIcons name="credit-card-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.confirmBtnText}>Proceed to Confirm Booking</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.detailsPlaceholder}>
+            <Feather name="info" size={20} color="#0052cc" style={{ marginBottom: 4 }} />
+            <Text style={styles.placeholderText}>
+              Select an available parking slot from the spatial map above to reserve.
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };

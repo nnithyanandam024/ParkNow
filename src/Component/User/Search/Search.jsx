@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './SearchStyles';
+import { parkingService } from '../../../services/parkingService';
+import { locationService } from '../../../services/locationService';
 
 // All parking data with city info
 const ALL_PARKING_LOTS = [
@@ -23,7 +25,7 @@ const ALL_PARKING_LOTS = [
     rating: 4.6,
     rate: 100,
     availability: 'Available',
-    city: 'New York',
+    city: 'Sathyamangalam',
   },
   {
     id: '2',
@@ -33,7 +35,7 @@ const ALL_PARKING_LOTS = [
     rating: 4.5,
     rate: 120,
     availability: 'Available',
-    city: 'New York',
+    city: 'Sathyamangalam',
   },
   {
     id: '3',
@@ -43,7 +45,7 @@ const ALL_PARKING_LOTS = [
     rating: 4.2,
     rate: 80,
     availability: 'Almost Full',
-    city: 'New York',
+    city: 'Sathyamangalam',
   },
   {
     id: '4',
@@ -53,7 +55,7 @@ const ALL_PARKING_LOTS = [
     rating: 4.9,
     rate: 150,
     availability: 'Available',
-    city: 'New York',
+    city: 'Sathyamangalam',
   },
   {
     id: '5',
@@ -147,21 +149,77 @@ const FILTERS = [
 const Search = ({ onBack, onViewMap, onParkingSelect }) => {
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState('distance');
+  const [dbLocations, setDbLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [recentSearches, setRecentSearches] = useState([
-    'Times Square',
-    'Grand Central',
+    'BIT College Campus',
+    'Sathyamangalam',
+    'Bus Stand Lot',
   ]);
 
+  // ── Fetch assigned parking locations from public.parking_locations ──────────
+  const fetchLiveLocations = useCallback(async () => {
+    try {
+      // 1. Get physical GPS user location
+      const userLoc = await locationService.getCurrentUserLocation();
+      const uLat = userLoc?.latitude || 11.4967;
+      const uLng = userLoc?.longitude || 77.2764;
+
+      // 2. Fetch assigned DB parking locations
+      const res = await parkingService.getParkingLocations();
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped = res.data.map((loc, idx) => {
+          const spotLat = loc.latitude ? Number(loc.latitude) : uLat + (idx + 1) * 0.003;
+          const spotLng = loc.longitude ? Number(loc.longitude) : uLng + (idx + 1) * 0.003;
+          const distKm = locationService.calculateDistance(uLat, uLng, spotLat, spotLng);
+          const avail = loc.availableSlots ?? loc.total_capacity ?? 10;
+
+          return {
+            id: String(loc.location_id),
+            rawId: loc.location_id,
+            name: loc.name,
+            street: loc.address || 'Sathyamangalam, TN',
+            distance: `${distKm} km away`,
+            distValue: distKm,
+            rating: 4.8,
+            rate: 30,
+            availability: avail === 0 ? 'Full' : avail <= 5 ? 'Almost Full' : 'Available',
+            availableSlots: avail,
+            city: loc.city || 'Sathyamangalam',
+            lat: spotLat,
+            lng: spotLng,
+          };
+        });
+
+        // Sort by nearby distance by default
+        mapped.sort((a, b) => a.distValue - b.distValue);
+        setDbLocations(mapped);
+      } else {
+        setDbLocations(ALL_PARKING_LOTS);
+      }
+    } catch (err) {
+      console.warn('Search screen DB fetch error:', err);
+      setDbLocations(ALL_PARKING_LOTS);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchLiveLocations();
+  }, [fetchLiveLocations]);
+
   const getFilteredResults = useCallback(() => {
+    const dataSource = dbLocations.length > 0 ? dbLocations : ALL_PARKING_LOTS;
     if (!searchText.trim()) {
-      return ALL_PARKING_LOTS.slice(0, 4); // Show first 4 by default
+      return dataSource;
     }
     const query = searchText.toLowerCase().trim();
-    const results = ALL_PARKING_LOTS.filter(
+    const results = dataSource.filter(
       (lot) =>
-        lot.city.toLowerCase().includes(query) ||
-        lot.name.toLowerCase().includes(query) ||
-        lot.street.toLowerCase().includes(query),
+        (lot.city && lot.city.toLowerCase().includes(query)) ||
+        (lot.name && lot.name.toLowerCase().includes(query)) ||
+        (lot.street && lot.street.toLowerCase().includes(query)),
     );
 
     // Sort based on active filter
@@ -169,13 +227,12 @@ const Search = ({ onBack, onViewMap, onParkingSelect }) => {
       results.sort((a, b) => a.rate - b.rate);
     } else if (activeFilter === 'distance') {
       results.sort(
-        (a, b) =>
-          parseFloat(a.distance) - parseFloat(b.distance),
+        (a, b) => (a.distValue || parseFloat(a.distance)) - (b.distValue || parseFloat(b.distance)),
       );
     }
 
     return results;
-  }, [searchText, activeFilter]);
+  }, [searchText, activeFilter, dbLocations]);
 
   const filteredResults = getFilteredResults();
 

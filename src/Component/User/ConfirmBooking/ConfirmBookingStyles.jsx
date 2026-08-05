@@ -335,4 +335,209 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+
+  /* ───── Duration Selector Chips ───── */
+  durationRow: {
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  durationScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 16,
+  },
+  durationChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  durationChipActive: {
+    backgroundColor: '#0052cc',
+    borderColor: '#0052cc',
+  },
+  durationChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  durationChipTextActive: {
+    color: '#FFFFFF',
+  },
+
+  /* ───── Modals & Overlays ───── */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  textInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 12,
+  },
+  modalCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  modalSaveBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#0052cc',
+  },
+  modalSaveText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+
+  /* Calendar Modal Styles */
+  calendarModalContent: {
+    width: '90%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  calendarMonthTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  weekDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  weekDayLabel: {
+    width: 36,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: '14.28%',
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 2,
+    borderRadius: 10,
+  },
+  dayCellEmpty: {
+    width: '14.28%',
+    height: 40,
+  },
+  dayCellSelected: {
+    backgroundColor: '#0052cc',
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  dayTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+
+  /* Date / Time Picker Input Box */
+  datePickerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  datePickerValueText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
 });

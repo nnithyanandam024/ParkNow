@@ -15,71 +15,76 @@ import Icon from 'react-native-vector-icons/Feather';
 import { styles } from './HomeStyles';
 import { parkingService } from '../../../services/parkingService';
 import { realtimeService } from '../../../services/realtimeService';
+import { locationService } from '../../../services/locationService';
+import { buildDashboardMapHTML } from '../../../services/leafletMapService';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
 
-// Sample parking data
+// Sathyamangalam, TN Default Coordinates & Parking Spots (including BIT College)
+const SATHY_DEFAULT_LAT = 11.5034;
+const SATHY_DEFAULT_LNG = 77.2444;
+
 const PARKING_SPOTS = [
   {
-    id: '1',
-    name: 'Grand Central Parking',
+    id: 'bit-campus-1',
+    name: 'BIT College Campus Parking',
     rating: 4.9,
-    distance: '0.4 miles away',
+    distance: '0.3 km away',
+    time: '3 mins',
+    availableSlots: 50,
+    rate: 20,
+    lat: 11.4967,
+    lng: 77.2764,
+    price: '₹20/hr',
+  },
+  {
+    id: 'sathy-bus-stand-2',
+    name: 'Sathyamangalam Bus Stand Lot',
+    rating: 4.8,
+    distance: '0.2 km away',
+    time: '2 mins',
+    availableSlots: 18,
+    rate: 30,
+    lat: 11.5034,
+    lng: 77.2444,
+    price: '₹30/hr',
+  },
+  {
+    id: 'bannari-temple-3',
+    name: 'Bannari Amman Temple Complex',
+    rating: 4.9,
+    distance: '5.4 km away',
+    time: '8 mins',
+    availableSlots: 35,
+    rate: 40,
+    lat: 11.5471,
+    lng: 77.2882,
+    price: '₹40/hr',
+  },
+  {
+    id: 'bhavanisagar-dam-4',
+    name: 'Bhavanisagar Dam Visitors Lot',
+    rating: 4.6,
+    distance: '12.0 km away',
+    time: '18 mins',
+    availableSlots: 40,
+    rate: 25,
+    lat: 11.4721,
+    lng: 77.1189,
+    price: '₹25/hr',
+  },
+  {
+    id: 'north-bazaar-5',
+    name: 'North Bazaar Multi-Level',
+    rating: 4.7,
+    distance: '0.5 km away',
     time: '4 mins',
     availableSlots: 12,
-    rate: 80,
-    lat: 40.7527,
-    lng: -73.9772,
-    price: '₹80',
-  },
-  {
-    id: '2',
-    name: 'Plaza Parking Hub',
-    rating: 4.8,
-    distance: '0.8 miles away',
-    time: '7 mins',
-    availableSlots: 3,
-    rate: 120,
-    lat: 40.7644,
-    lng: -73.9735,
-    price: '₹120',
-  },
-  {
-    id: '3',
-    name: 'Lincoln Center Lot',
-    rating: 4.5,
-    distance: '1.2 miles away',
-    time: '10 mins',
-    availableSlots: 8,
-    rate: 150,
-    lat: 40.7725,
-    lng: -73.9835,
-    price: '₹150',
-  },
-  {
-    id: '4',
-    name: 'Midtown Secure Park',
-    rating: 4.7,
-    distance: '0.6 miles away',
-    time: '5 mins',
-    availableSlots: 5,
-    rate: 100,
-    lat: 40.7549,
-    lng: -73.9840,
-    price: '₹100',
-  },
-  {
-    id: '5',
-    name: 'Times Square Garage',
-    rating: 4.3,
-    distance: '0.9 miles away',
-    time: '8 mins',
-    availableSlots: 2,
-    rate: 180,
-    lat: 40.7580,
-    lng: -73.9855,
-    price: '₹180',
+    rate: 35,
+    lat: 11.5065,
+    lng: 77.2480,
+    price: '₹35/hr',
   },
 ];
 
@@ -91,334 +96,255 @@ const FILTERS = [
   { id: 'accessible', label: 'Accessible', icon: 'user' },
 ];
 
-// Build Leaflet HTML with OpenStreetMap tiles
-const buildMapHTML = (spots) => {
-  const markersJS = spots
-    .map(
-      (s, i) => `
-    var marker${i} = L.marker([${s.lat}, ${s.lng}], {
-      icon: L.divIcon({
-        className: 'price-marker',
-        html: '<div class="marker-bubble">${s.price}</div><div class="marker-arrow"></div>',
-        iconSize: [60, 40],
-        iconAnchor: [30, 40],
-      })
-    }).addTo(map);
-    marker${i}.on('click', function() {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerPress', index: ${i} }));
-    });
-  `,
-    )
-    .join('\n');
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    * { margin: 0; padding: 0; }
-    html, body, #map { width: 100%; height: 100%; }
-    .price-marker { background: none; border: none; }
-    .marker-bubble {
-      background: #0052cc;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      padding: 5px 10px;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(0,82,204,0.35);
-      white-space: nowrap;
-    }
-    .marker-arrow {
-      width: 0; height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 8px solid #0052cc;
-      margin: -1px auto 0 auto;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    var map = L.map('map', {
-      zoomControl: false,
-      attributionControl: false
-    }).setView([40.7580, -73.9855], 14);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    }).addTo(map);
-
-    ${markersJS}
-
-    document.addEventListener('message', function(e) {
-      try {
-        var data = JSON.parse(e.data);
-        if (data.type === 'flyTo') {
-          map.flyTo([data.lat, data.lng], 15, { duration: 0.5 });
-        }
-      } catch(err) {}
-    });
-    window.addEventListener('message', function(e) {
-      try {
-        var data = JSON.parse(e.data);
-        if (data.type === 'flyTo') {
-          map.flyTo([data.lat, data.lng], 15, { duration: 0.5 });
-        }
-      } catch(err) {}
-    });
-  </script>
-</body>
-</html>
-  `;
+// Delegate map building to the shared leafletMapService (multi-CDN fallback)
+const buildMapHTML = (spots, userLat = SATHY_DEFAULT_LAT, userLng = SATHY_DEFAULT_LNG) => {
+  return buildDashboardMapHTML(spots, userLat, userLng);
 };
 
 const Home = ({ onBack, onSearch, onParkingSelect, onReserve }) => {
   const [activeFilter, setActiveFilter] = useState('nearby');
   const [parkingSpots, setParkingSpots] = useState(PARKING_SPOTS);
+  const [userLocation, setUserLocation] = useState({ latitude: SATHY_DEFAULT_LAT, longitude: SATHY_DEFAULT_LNG });
   const webViewRef = useRef(null);
   const flatListRef = useRef(null);
 
   useEffect(() => {
-    async function loadLocations() {
+    async function initGPSAndLocations() {
+      // 1. Fetch physical GPS location
+      const loc = await locationService.getCurrentUserLocation();
+      if (loc && loc.latitude && loc.longitude) {
+        setUserLocation(loc);
+      }
+
+      // 2. Fetch Supabase Parking Locations
       try {
         const res = await parkingService.getParkingLocations();
         if (res.success && res.data && res.data.length > 0) {
-          const dbSpots = res.data.map((loc, i) => ({
-            id: String(loc.location_id),
-            name: loc.name,
-            rating: 4.8,
-            distance: '0.5 miles away',
-            time: '5 mins',
-            availableSlots: loc.availableSlots ?? loc.total_capacity ?? 10,
-            rate: 100,
-            lat: loc.latitude ? Number(loc.latitude) : 40.7527 + i * 0.005,
-            lng: loc.longitude ? Number(loc.longitude) : -73.9772 + i * 0.005,
-            price: '\u20b9100',
-          }));
-          setParkingSpots(dbSpots);
+          const uLat = loc?.latitude || SATHY_DEFAULT_LAT;
+          const uLng = loc?.longitude || SATHY_DEFAULT_LNG;
+
+          const dbSpots = res.data.map((locationItem, i) => {
+            const spotLat = locationItem.latitude ? Number(locationItem.latitude) : uLat + (i + 1) * 0.003;
+            const spotLng = locationItem.longitude ? Number(locationItem.longitude) : uLng + (i + 1) * 0.003;
+            const dist = locationService.calculateDistance(uLat, uLng, spotLat, spotLng);
+
+            return {
+              id: String(locationItem.location_id),
+              name: locationItem.name,
+              rating: 4.8,
+              distance: `${dist} km away`,
+              time: `${Math.round(dist * 3 + 2)} mins`,
+              availableSlots: locationItem.availableSlots ?? locationItem.total_capacity ?? 10,
+              rate: 30,
+              lat: spotLat,
+              lng: spotLng,
+              price: '₹30/hr',
+            };
+          });
+
+          // Merge DB spots with default Sathyamangalam BIT spots
+          setParkingSpots([...PARKING_SPOTS, ...dbSpots]);
         }
       } catch (err) {
-        console.log('Supabase location load fallback:', err);
+        console.warn('Error fetching Supabase parking locations:', err);
       }
     }
-    loadLocations();
 
-    // Real-time: when any slot status changes, re-fetch location available counts
+    initGPSAndLocations();
+
+    // 3. Real-Time WebSockets Channel Listener for Parking Occupancy Updates
     const channel = realtimeService.subscribeToSlots(1, (payload) => {
-      if (payload.eventType === 'UPDATE' && payload.new) {
-        const updated = payload.new;
-        setParkingSpots((prev) =>
-          prev.map((spot) => {
-            if (String(spot.id) === String(updated.location_id)) {
-              const delta =
-                updated.status === 'AVAILABLE' ? 1
-                : updated.status === 'RESERVED' || updated.status === 'OCCUPIED' ? -1
-                : 0;
-              return {
-                ...spot,
-                availableSlots: Math.max(0, (spot.availableSlots || 0) + delta),
-              };
-            }
-            return spot;
-          })
-        );
-      }
+      console.log('[Realtime Home] Slot status changed:', payload);
     });
 
-    return () => realtimeService.unsubscribe(channel);
+    return () => {
+      realtimeService.unsubscribe(channel);
+    };
   }, []);
 
-  const mapHTML = buildMapHTML(parkingSpots);
+  const handleCardScroll = (event) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = Math.floor(event.nativeEvent.contentOffset.x / (CARD_WIDTH + 16));
+    if (index >= 0 && index < parkingSpots.length) {
+      const spot = parkingSpots[index];
+      if (webViewRef.current && spot.lat && spot.lng) {
+        webViewRef.current.postMessage(
+          JSON.stringify({ type: 'flyTo', lat: spot.lat, lng: spot.lng })
+        );
+      }
+    }
+  };
 
-  const handleMapMessage = (event) => {
+  const handleMarkerClickFromWebview = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'markerPress') {
-        flatListRef.current?.scrollToIndex({
+      if (data.type === 'markerPress' && flatListRef.current) {
+        flatListRef.current.scrollToIndex({
           index: data.index,
           animated: true,
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log('WebView message error:', e);
+    }
   };
 
-  const handleCardScroll = (index) => {
-    const spot = parkingSpots[index];
-    if (spot && webViewRef.current) {
+  const handleRecenterToUser = async () => {
+    const loc = await locationService.getCurrentUserLocation();
+    const targetLat = loc?.latitude || userLocation.latitude || SATHY_DEFAULT_LAT;
+    const targetLng = loc?.longitude || userLocation.longitude || SATHY_DEFAULT_LNG;
+
+    if (webViewRef.current) {
       webViewRef.current.postMessage(
-        JSON.stringify({ type: 'flyTo', lat: spot.lat, lng: spot.lng }),
+        JSON.stringify({
+          type: 'recenterUser',
+          lat: targetLat,
+          lng: targetLng,
+        })
       );
     }
   };
 
-  const renderParkingCard = ({ item, index }) => (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.9}
-      onPress={() => handleCardScroll(index)}
-    >
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View style={styles.ratingBadge}>
-          <Icon name="star" size={12} color="#16A34A" />
-          <Text style={styles.ratingText}>{item.rating}</Text>
-        </View>
-      </View>
-      <View style={styles.cardMeta}>
-        <Icon name="navigation" size={13} color="#64748B" />
-        <Text style={styles.cardMetaText}>
-          {item.distance} • {item.time}
-        </Text>
-      </View>
-      <View style={styles.cardDivider} />
-      <View style={styles.cardFooter}>
-        <View style={styles.cardStat}>
-          <Text style={styles.cardStatLabel}>AVAILABLE SLOTS</Text>
-          <Text style={styles.cardStatValue}>{item.availableSlots}</Text>
-        </View>
-        <View style={styles.cardStatDivider} />
-        <View style={styles.cardStat}>
-          <Text style={styles.cardStatLabel}>RATE</Text>
-          <Text style={styles.cardStatValue}>
-            ₹{item.rate}
-            <Text style={styles.cardStatUnit}>/hr</Text>
-          </Text>
-        </View>
-      </View>
-      {/* Action Buttons */}
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={styles.detailsBtn}
-          activeOpacity={0.7}
-          onPress={() => onParkingSelect?.({ ...item, _from: 'Home' })}
-        >
-          <Text style={styles.detailsBtnText}>Details</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.reserveBtn}
-          activeOpacity={0.8}
-          onPress={() => onReserve?.({ ...item, _from: 'Home' })}
-        >
-          <Text style={styles.reserveBtnText}>Reserve Now</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+  const mapHTML = buildMapHTML(parkingSpots, userLocation.latitude, userLocation.longitude);
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* Leaflet Map */}
-      <WebView
-        ref={webViewRef}
-        source={{ html: mapHTML }}
-        style={styles.map}
-        onMessage={handleMapMessage}
-        javaScriptEnabled
-        domStorageEnabled
-        startInLoadingState
-        scrollEnabled={false}
-        overScrollMode="never"
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Floating Header */}
-      <View style={styles.headerOverlay} pointerEvents="box-none">
-        <View pointerEvents="box-none">
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              {onBack && (
-                <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-                  <Icon name="arrow-left" size={20} color="#0F172A" />
-                </TouchableOpacity>
-              )}
-              <View>
-                <Text style={styles.greeting}>Hello, Alex</Text>
-                <View style={styles.locationRow}>
-                  <Icon name="map-pin" size={12} color="#0052cc" />
-                  <Text style={styles.locationText}>New York, NY</Text>
-                </View>
-              </View>
+      {/* Floating Header Overlay */}
+      <View style={styles.headerOverlay}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            {onBack && (
+              <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+                <Icon name="arrow-left" size={20} color="#0F172A" />
+              </TouchableOpacity>
+            )}
+            <View>
+              <Text style={styles.headerSub}>Find Parking Near</Text>
+              <Text style={styles.headerTitle}>Sathyamangalam, TN</Text>
             </View>
-            <TouchableOpacity style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Icon name="user" size={20} color="#0052cc" />
-              </View>
-            </TouchableOpacity>
           </View>
-
-          {/* Search Bar */}
-          <TouchableOpacity
-            style={styles.searchBar}
-            onPress={onSearch}
-            activeOpacity={0.8}
-          >
-            <Icon name="search" size={18} color="#94A3B8" />
-            <Text style={styles.searchPlaceholder}>Where to park?</Text>
+          <TouchableOpacity style={styles.searchBtn} onPress={onSearch}>
+            <Icon name="search" size={20} color="#0F172A" />
           </TouchableOpacity>
+        </View>
 
-          {/* Filter Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersContainer}
-          >
-            {FILTERS.map((filter) => (
+        {/* Filter Chips Scroll */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
+          {FILTERS.map((f) => {
+            const active = activeFilter === f.id;
+            return (
               <TouchableOpacity
-                key={filter.id}
-                style={[
-                  styles.filterChip,
-                  activeFilter === filter.id && styles.filterChipActive,
-                ]}
-                onPress={() => setActiveFilter(filter.id)}
-                activeOpacity={0.7}
+                key={f.id}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => setActiveFilter(f.id)}
               >
                 <Icon
-                  name={filter.icon}
+                  name={f.icon}
                   size={14}
-                  color={activeFilter === filter.id ? '#FFFFFF' : '#64748B'}
-                  style={styles.filterIcon}
+                  color={active ? '#FFFFFF' : '#64748B'}
+                  style={{ marginRight: 6 }}
                 />
-                <Text
-                  style={[
-                    styles.filterText,
-                    activeFilter === filter.id && styles.filterTextActive,
-                  ]}
-                >
-                  {filter.label}
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                  {f.label}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+            );
+          })}
+        </ScrollView>
       </View>
 
-      {/* Bottom Parking Cards */}
-      <View style={styles.cardsContainer} pointerEvents="box-none">
+      {/* Interactive Map View */}
+      <View style={styles.map}>
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+          source={{ html: mapHTML, baseUrl: 'https://unpkg.com' }}
+          containerStyle={{ flex: 1, width: '100%', height: '100%' }}
+          style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#E2E8F0' }}
+          onMessage={handleMarkerClickFromWebview}
+          javaScriptEnabled
+          domStorageEnabled
+          mixedContentMode="always"
+          allowUniversalAccessFromFileURLs
+          allowFileAccess
+          androidHardwareAccelerationDisabled={false}
+          startInLoadingState={false}
+          onError={(e) => console.warn('[DashboardMap] WebView error:', e.nativeEvent)}
+        />
+      </View>
+
+      {/* Floating Google Maps Style "My Location" Pinpoint Button */}
+      <TouchableOpacity
+        style={styles.myLocationBtn}
+        onPress={handleRecenterToUser}
+        activeOpacity={0.8}
+      >
+        <Icon name="crosshair" size={22} color="#0052cc" />
+      </TouchableOpacity>
+
+      {/* Bottom Horizontal Parking Cards Carousel */}
+      <View style={styles.cardsOverlay}>
         <FlatList
           ref={flatListRef}
           data={parkingSpots}
-          renderItem={renderParkingCard}
           keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
           snapToInterval={CARD_WIDTH + 16}
           decelerationRate="fast"
-          contentContainerStyle={styles.cardsList}
+          contentContainerStyle={styles.cardsScroll}
+          onMomentumScrollEnd={handleCardScroll}
+          renderItem={({ item }) => (
+            <View style={[styles.spotCard, { width: CARD_WIDTH }]}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.spotName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.spotMeta}>
+                    {item.distance} • {item.time}
+                  </Text>
+                </View>
+                <View style={styles.ratingBadge}>
+                  <Icon name="star" size={12} color="#A16207" style={{ marginRight: 4 }} />
+                  <Text style={styles.ratingText}>{item.rating}</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardDivider} />
+
+              <View style={styles.cardFooter}>
+                <View>
+                  <Text style={styles.priceText}>{item.price}</Text>
+                  <Text style={styles.slotsAvailable}>
+                    {item.availableSlots} slots left
+                  </Text>
+                </View>
+
+                <View style={styles.cardActions}>
+                  <TouchableOpacity
+                    style={styles.detailsBtn}
+                    onPress={() => onParkingSelect && onParkingSelect(item)}
+                  >
+                    <Text style={styles.detailsBtnText}>Details</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.reserveBtn}
+                    onPress={() => onReserve && onReserve(item)}
+                  >
+                    <Text style={styles.reserveBtnText}>Reserve</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
         />
       </View>
     </View>

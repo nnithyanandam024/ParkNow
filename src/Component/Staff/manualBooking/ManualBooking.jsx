@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Text,
   View,
@@ -54,11 +54,13 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
   const [outTime, setOutTime] = useState('12:00 PM');
 
   // ── Live slot state ──────────────────────────────────────────────────────
+  const [allSlots, setAllSlots]           = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState(null); // { slot_id, slot_number }
+  const [selectedSlot, setSelectedSlot]   = useState(null); // { slot_id, slot_number }
   const [showSlotModal, setShowSlotModal] = useState(false);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingSlots, setLoadingSlots]   = useState(false);
+  const [isSubmitting, setIsSubmitting]   = useState(false);
+  const [slotFilter, setSlotFilter]       = useState('all'); // 'all' | 'free' | 'ev'
   
   // Custom Date Picker Modal States
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -93,31 +95,58 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
     return { hours, minutes };
   };
 
-  // ── Fetch available slots from Supabase on mount ───────────────────────────
-  useEffect(() => {
-    async function fetchSlots() {
-      setLoadingSlots(true);
-      try {
-        const { data, error } = await supabase
-          .from('parking_slots')
-          .select('slot_id, slot_number, slot_type, floor_level, parking_locations(name)')
-          .eq('status', 'AVAILABLE')
-          .eq('is_active', true)
-          .order('slot_number', { ascending: true });
-        if (!error && data) {
-          setAvailableSlots(data);
-          if (data.length > 0 && !selectedSlot) {
-            setSelectedSlot(data[0]);
-          }
+  // ── Fetch slots for location from Supabase with date & time-based availability check ──────
+  const fetchTimebasedSlots = useCallback(async () => {
+    setLoadingSlots(true);
+    try {
+      const dIn = parseDateString(inDate);
+      const tIn = parseTimeString(inTime);
+      const dOut = parseDateString(outDate);
+      const tOut = parseTimeString(outTime);
+
+      const startIso = dIn && tIn ? new Date(new Date(dIn).setHours(tIn.hours, tIn.minutes, 0, 0)).toISOString() : new Date().toISOString();
+      const endIso = dOut && tOut ? new Date(new Date(dOut).setHours(tOut.hours, tOut.minutes, 0, 0)).toISOString() : new Date(Date.now() + 2 * 3600000).toISOString();
+
+      const { data: slotsData } = await supabase
+        .from('parking_slots')
+        .select('*, parking_locations(name)')
+        .eq('location_id', 1)
+        .eq('is_active', true)
+        .order('slot_id', { ascending: true });
+
+      const { data: overlappingBookings } = await supabase
+        .from('bookings')
+        .select('slot_id')
+        .eq('location_id', 1)
+        .in('status', ['CONFIRMED', 'CHECKED_IN'])
+        .lt('start_time', endIso)
+        .gt('end_time', startIso);
+
+      const bookedSet = new Set((overlappingBookings || []).map((b) => Number(b.slot_id)));
+
+      if (slotsData && slotsData.length > 0) {
+        const mappedSlots = slotsData.map(s => ({
+          ...s,
+          timebasedStatus: bookedSet.has(Number(s.slot_id)) ? 'OCCUPIED' : s.status,
+        }));
+        setAllSlots(mappedSlots);
+
+        const avail = slotsData.filter((s) => !bookedSet.has(Number(s.slot_id)) && s.status !== 'MAINTENANCE');
+        setAvailableSlots(avail);
+        if (avail.length > 0) {
+          setSelectedSlot((prev) => (prev && avail.some(a => a.slot_id === prev.slot_id) ? prev : avail[0]));
         }
-      } catch (e) {
-        console.log('ManualBooking fetchSlots error:', e.message);
-      } finally {
-        setLoadingSlots(false);
       }
+    } catch (e) {
+      console.log('ManualBooking fetchSlots error:', e.message);
+    } finally {
+      setLoadingSlots(false);
     }
-    fetchSlots();
-  }, []);
+  }, [inDate, inTime, outDate, outTime]);
+
+  useEffect(() => {
+    fetchTimebasedSlots();
+  }, [fetchTimebasedSlots]);
 
   useEffect(() => {
     if (duration === 'Custom') return;
@@ -235,8 +264,16 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
 
     try {
       const startTime = toISOString(inDate, inTime);
-      // Even if outDate or outTime is null/empty, confirm booking with end_time = null (Open-ended)
-      const endTime   = (duration === 'Open Slot' || !outDate || !outTime) ? null : toISOString(outDate, outTime);
+      const startDateTimeObj = parseDateString(inDate) || new Date();
+      const tObj = parseTimeString(inTime);
+      if (tObj) startDateTimeObj.setHours(tObj.hours, tObj.minutes, 0, 0);
+
+      // Fix NOT-NULL constraint for end_time: For Open Slot or missing end time, set default 24h from start
+      let endTime = new Date(startDateTimeObj.getTime() + 24 * 60 * 60 * 1000).toISOString();
+      if (duration !== 'Open Slot' && outDate && outTime) {
+        endTime = toISOString(outDate, outTime);
+      }
+
       const bookingCode = `PN-ST-${Math.floor(10000 + Math.random() * 90000)}`;
 
       // 1. Get or create a guest user record for walk-in customer
@@ -263,14 +300,26 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
 
       const vehicleId = vehicle?.vehicle_id || 1;
 
-      // Calculate total amount: Base Fee ₹150 + ₹100/hr
-      let calculatedAmount = 150;
-      if (duration === '2 Hours') calculatedAmount += 200;
-      else if (duration === '4 Hours') calculatedAmount += 400;
-      else if (duration === 'Full Day') calculatedAmount += 1200;
-      else if (duration === 'Custom' && computedHours) calculatedAmount += Math.round(computedHours * 100);
+      // Pricing Rule:
+      // Open Slot Bookings: Base Fee (₹20) + ₹35/hr
+      // Fixed-Duration Bookings: Flat Rate ₹30/hr (no base fee)
+      let calculatedAmount = 60;
+      if (duration === 'Open Slot') {
+        const hrs = computedHours || 2;
+        calculatedAmount = 20 + Math.round(hrs * 35);
+      } else if (duration === '1 Hour') {
+        calculatedAmount = 30;
+      } else if (duration === '2 Hours') {
+        calculatedAmount = 60;
+      } else if (duration === '4 Hours') {
+        calculatedAmount = 120;
+      } else if (duration === 'Full Day') {
+        calculatedAmount = 360; // 12 hrs x 30
+      } else if (duration === 'Custom' && computedHours) {
+        calculatedAmount = Math.round(computedHours * 30);
+      }
 
-      // 3. Insert booking record
+      // 3. Insert booking record with valid non-null end_time
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert([{
@@ -296,13 +345,21 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
         .update({ status: 'RESERVED' })
         .eq('slot_id', selectedSlot.slot_id);
 
-      // 5. Notify parent and navigate
-      Alert.alert(
-        '✅ Booking Created',
-        `Booking ${bookingCode} created for ${customerName}.\nSlot ${selectedSlot.slot_number} is now reserved.`,
-        [{ text: 'OK' }]
-      );
+      // 5. Insert payment record in public.payments table
+      const txnId = `TXN-ST-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      await supabase.from('payments').insert([
+        {
+          booking_id: booking.booking_id,
+          amount: calculatedAmount,
+          payment_method: 'CASH',
+          payment_status: 'COMPLETED',
+          transaction_id: txnId,
+          collected_by_staff_id: 1,
+          paid_at: new Date().toISOString(),
+        },
+      ]);
 
+      // 6. Notify parent and navigate directly to BookingSuccess screen
       if (onBookingSuccess) {
         onBookingSuccess({
           name:          customerName,
@@ -580,12 +637,12 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
               <MaterialCommunityIcons name="tag-outline" size={18} color="#0052cc" style={{ marginRight: 6 }} />
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>Rate Card:</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E40AF' }}>Base Fee: ₹150</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E40AF' }}>Open: ₹20 + ₹35/hr</Text>
               </View>
-              <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#15803D' }}>+ ₹100 / hr</Text>
+              <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#15803D' }}>Fixed: ₹30/hr</Text>
               </View>
             </View>
           </View>
@@ -709,7 +766,7 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
         </TouchableOpacity>
       </Modal>
 
-      {/* ── Live Slot Selection Modal ──────────────────────────────────── */}
+      {/* ── User-Friendly Spatial Grid Slot Selection Modal ───────────────── */}
       <Modal
         visible={showSlotModal}
         transparent={true}
@@ -721,57 +778,210 @@ const ManualBooking = ({ onBack, onBookingSuccess, onNavigateToScanner, onNaviga
           activeOpacity={1}
           onPress={() => setShowSlotModal(false)}
         >
-          <View style={[styles.pickerModalContent, { maxHeight: '70%' }]}>
-            <View style={styles.pickerHeader}>
+          <View
+            style={[styles.pickerModalContent, { maxHeight: '85%', width: '92%', borderRadius: 24, padding: 18 }]}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <View>
-                <Text style={styles.pickerHeaderTitle}>Select Parking Slot</Text>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: '#0F172A' }}>Assign Parking Slot</Text>
                 <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                  {availableSlots.length} available slots
+                  {availableSlots.length} Available  •  {allSlots.length - availableSlots.length} Taken
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setShowSlotModal(false)}>
-                <Feather name="x" size={20} color="#64748B" />
+              <TouchableOpacity onPress={() => setShowSlotModal(false)} activeOpacity={0.7}>
+                <Feather name="x" size={22} color="#64748B" />
               </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {availableSlots.map((slot) => (
+
+            {/* Filter Pills */}
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+              {[
+                { key: 'all',  label: 'All' },
+                { key: 'free', label: 'Free' },
+                { key: 'ev',   label: 'EV' },
+              ].map((f) => (
                 <TouchableOpacity
-                  key={slot.slot_id}
-                  style={[
-                    styles.pickerOptionItem,
-                    selectedSlot?.slot_id === slot.slot_id && styles.pickerOptionItemActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedSlot(slot);
-                    setShowSlotModal(false);
+                  key={f.key}
+                  onPress={() => setSlotFilter(f.key)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                    borderRadius: 12,
+                    backgroundColor: slotFilter === f.key ? '#0052cc' : '#EFF6FF',
+                    borderWidth: 1,
+                    borderColor: slotFilter === f.key ? '#003d99' : '#BFDBFE',
                   }}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[
-                      styles.pickerOptionText,
-                      selectedSlot?.slot_id === slot.slot_id && styles.pickerOptionTextActive,
-                      { fontWeight: '700' },
-                    ]}>
-                      {slot.slot_number}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                      {slot.slot_type || 'Standard'} • Floor {slot.floor_level || 'P1'} • {slot.parking_locations?.name || 'Main Lot'}
-                    </Text>
-                  </View>
-                  {selectedSlot?.slot_id === slot.slot_id && (
-                    <Feather name="check" size={16} color="#0052cc" style={{ marginLeft: 8 }} />
-                  )}
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: slotFilter === f.key ? '#fff' : '#0052cc' }}>
+                    {f.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
-              {availableSlots.length === 0 && (
-                <View style={{ alignItems: 'center', padding: 32 }}>
-                  <MaterialCommunityIcons name="car-off" size={36} color="#CBD5E1" />
-                  <Text style={{ marginTop: 10, color: '#94A3B8', fontSize: 14 }}>
-                    No available slots right now
-                  </Text>
-                </View>
-              )}
+            </View>
+
+            {/* Legend */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F8FAFC', padding: 8, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: '#E2E8F0' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E', marginRight: 4 }} />
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#64748B' }}>Available</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0052cc', marginRight: 4 }} />
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#64748B' }}>Selected</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', marginRight: 4 }} />
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#64748B' }}>Taken</Text>
+              </View>
+            </View>
+
+            {/* Spatial Grid Content */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              {(() => {
+                const displaySlots = slotFilter === 'free'
+                  ? allSlots.filter((s) => s.status === 'AVAILABLE')
+                  : slotFilter === 'ev'
+                  ? allSlots.filter((s) => s.slot_type === 'EV')
+                  : allSlots;
+
+                const getPrefix = (sn = '') => {
+                  const m = sn.match(/^([A-Za-z]+)/);
+                  return m ? m[1].toUpperCase() : 'Z';
+                };
+
+                const zoneGroups = displaySlots.reduce((acc, slot) => {
+                  const z = getPrefix(slot.slot_number);
+                  if (!acc[z]) acc[z] = [];
+                  acc[z].push(slot);
+                  return acc;
+                }, {});
+
+                const sortedZones = Object.keys(zoneGroups).sort();
+
+                if (sortedZones.length === 0) {
+                  return (
+                    <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                      <MaterialCommunityIcons name="car-off" size={36} color="#CBD5E1" />
+                      <Text style={{ marginTop: 8, color: '#94A3B8', fontSize: 13 }}>No slots match this filter</Text>
+                    </View>
+                  );
+                }
+
+                const renderCell = (slot) => {
+                  const isSelected = selectedSlot?.slot_id === slot.slot_id;
+                  const isOccupied = slot.status !== 'AVAILABLE';
+                  const isEV       = slot.slot_type === 'EV';
+
+                  let cellBg    = '#DCFCE7';
+                  let borderClr = '#22C55E';
+                  let iconColor = '#15803D';
+
+                  if (isOccupied) { cellBg = '#FEE2E2'; borderClr = '#EF4444'; iconColor = '#EF4444'; }
+                  if (isSelected) { cellBg = '#0052cc'; borderClr = '#003d99'; iconColor = '#FFFFFF'; }
+
+                  return (
+                    <TouchableOpacity
+                      key={slot.slot_id}
+                      onPress={() => {
+                        if (isOccupied) {
+                          Alert.alert('Slot Taken', `Slot ${slot.slot_number} is currently occupied/reserved.`);
+                          return;
+                        }
+                        setSelectedSlot(slot);
+                      }}
+                      activeOpacity={0.75}
+                      style={{
+                        width: 54,
+                        height: 48,
+                        backgroundColor: cellBg,
+                        borderRadius: 8,
+                        borderWidth: 1.5,
+                        borderColor: borderClr,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: 3,
+                        position: 'relative',
+                      }}
+                    >
+                      {isOccupied ? (
+                        <MaterialCommunityIcons name="car" size={18} color={iconColor} />
+                      ) : (
+                        <>
+                          {isEV && !isSelected && (
+                            <MaterialCommunityIcons
+                              name="lightning-bolt"
+                              size={10}
+                              color="#0052cc"
+                              style={{ position: 'absolute', top: 2, right: 3 }}
+                            />
+                          )}
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: iconColor, textAlign: 'center' }}>
+                            {slot.slot_number}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  );
+                };
+
+                return sortedZones.map((zoneName) => {
+                  const zSlots = zoneGroups[zoneName] || [];
+                  const half   = Math.ceil(zSlots.length / 2);
+                  const left   = zSlots.slice(0, half);
+                  const right  = zSlots.slice(half);
+
+                  return (
+                    <View key={zoneName} style={{ marginBottom: 14 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                        <View style={{ backgroundColor: '#EFF6FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: '#0052cc' }}>ZONE {zoneName}</Text>
+                        </View>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0', marginLeft: 8 }} />
+                      </View>
+
+                      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', maxWidth: 120, justifyContent: 'flex-end' }}>
+                          {left.map(renderCell)}
+                        </View>
+                        <View style={{ width: 24, alignItems: 'center', justifyContent: 'center', marginHorizontal: 4, paddingVertical: 4 }}>
+                          <View style={{ width: 2, flex: 1, backgroundColor: '#E2E8F0' }} />
+                          <MaterialCommunityIcons name="arrow-up-down" size={12} color="#CBD5E1" style={{ marginVertical: 2 }} />
+                          <View style={{ width: 2, flex: 1, backgroundColor: '#E2E8F0' }} />
+                        </View>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', maxWidth: 120, justifyContent: 'flex-start' }}>
+                          {right.map(renderCell)}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                });
+              })()}
             </ScrollView>
+
+            {/* Confirm Slot Selection Footer */}
+            {selectedSlot && (
+              <TouchableOpacity
+                style={{
+                  width: '100%',
+                  height: 46,
+                  backgroundColor: '#0052cc',
+                  borderRadius: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  marginTop: 8,
+                }}
+                onPress={() => setShowSlotModal(false)}
+                activeOpacity={0.85}
+              >
+                <Feather name="check-circle" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>
+                  Confirm Slot {selectedSlot.slot_number}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StatusBar, BackHandler } from 'react-native';
 
 // Auth Components
 import Opening from './src/Component/Opening_page/Opening';
@@ -20,7 +20,8 @@ import ProfileScreen from './src/Component/User/Profile/ProfileScreen';
 import BottomTabBar from './src/Component/User/BottomTabBar/BottomTabBar';
 
 // Staff Components (Exact ParkNow-Staff integration)
-import StaffDashboard from './src/Component/Staff/dashboard/dashboard';
+import RawStaffDashboard from './src/Component/Staff/dashboard/dashboard';
+const StaffDashboard: any = RawStaffDashboard;
 import StaffBookingsList from './src/Component/Staff/BookingsList';
 import StaffManualBooking from './src/Component/Staff/manualBooking/ManualBooking';
 import StaffQrScanner from './src/Component/Staff/qr sacnner/QRScanner';
@@ -36,8 +37,10 @@ import StaffManagement from './src/Component/Admin/StaffManagement/StaffManageme
 import AdminProfile from './src/Component/Admin/Profile/AdminProfile';
 import AdminBottomTabBar from './src/Component/Admin/AdminBottomTabBar';
 
-// Common Workspace Switcher
+// Common Workspace Switcher & Services
 import WorkspaceSwitcher from './src/Component/Common/WorkspaceSwitcher';
+import { realtimeService } from './src/services/realtimeService';
+import { locationService } from './src/services/locationService';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('Opening');
@@ -77,6 +80,7 @@ const App = () => {
   const [selectedSlotId, setSelectedSlotId] = useState<any>(null); // full slot object
   const [previousScreenOfNavigation, setPreviousScreenOfNavigation] = useState('BookingSuccess');
   const [previousScreenOfPass, setPreviousScreenOfPass] = useState('BookingSuccess');
+  const [pendingUserBookingDetails, setPendingUserBookingDetails] = useState<any>(null);
 
   // Extract display string safely — never pass raw object into Text components
   const slotDisplayId: string = typeof selectedSlotId === 'string'
@@ -118,6 +122,81 @@ const App = () => {
     setStaffScreen('BookingSuccess');
   };
 
+  useEffect(() => {
+    // 1. Request Location Permission on App Startup
+    locationService.requestLocationPermission();
+
+    // 2. Hardware Back Button Handling
+    const onBackPress = () => {
+      if (currentScreen !== 'Home' && currentScreen !== 'Login' && currentScreen !== 'Opening') {
+        setCurrentScreen('Home');
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    // 3. Live Slots Realtime Subscription
+    const slotsChannel = realtimeService.subscribeToSlots(1, (payload: any) => {
+      console.log('[Realtime App] Slot updated:', payload);
+      if (payload.new) {
+        if (payload.new.status === 'OCCUPIED' || payload.new.status === 'RESERVED') {
+          setAvailableSlots(prev => Math.max(0, prev - 1));
+          setOccupiedSlots(prev => prev + 1);
+        } else if (payload.new.status === 'AVAILABLE') {
+          setOccupiedSlots(prev => Math.max(0, prev - 1));
+          setAvailableSlots(prev => prev + 1);
+        }
+      }
+    });
+
+    // 4. Live Verification Logs Realtime Subscription
+    const logsChannel = realtimeService.subscribeToVerificationLogs((payload: any) => {
+      if (payload.new) {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const newAct = {
+          id: String(payload.new.log_id || Date.now()),
+          lpn: payload.new.remarks || 'GATE-SCAN',
+          details: `Verification • ${timeStr}`,
+          status: payload.new.status || 'SUCCESS',
+          type: payload.new.action === 'ENTRY_SCAN' ? 'in' : 'out',
+        };
+        setRecentActivity(prev => [newAct, ...prev]);
+      }
+    });
+
+    // 5. Live Bookings Realtime Subscription
+    const bookingsChannel = realtimeService.subscribeToBookings((payload: any) => {
+      if (payload.eventType === 'INSERT') {
+        setTodaysTotal(prev => prev + 1);
+      }
+    });
+
+    // 6. Live Payments Realtime Subscription
+    const paymentsChannel = realtimeService.subscribeToPayments((payload: any) => {
+      if (payload.new) {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const newAct = {
+          id: String(payload.new.payment_id || Date.now()),
+          lpn: payload.new.payment_method || 'PAYMENT',
+          details: `Payment (${payload.new.payment_method}) • ${timeStr}`,
+          status: `$${Number(payload.new.amount || 0).toFixed(2)} PAID`,
+          type: 'in',
+        };
+        setRecentActivity(prev => [newAct, ...prev]);
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      realtimeService.unsubscribe(slotsChannel);
+      realtimeService.unsubscribe(logsChannel);
+      realtimeService.unsubscribe(bookingsChannel);
+      realtimeService.unsubscribe(paymentsChannel);
+    };
+  }, [currentScreen]);
+
   const handleFinalizeAssignment = (booking: any) => {
     setPendingBooking(booking);
     setStaffScreen('CollectPayment');
@@ -147,8 +226,9 @@ const App = () => {
 
   const navigateToReserve = (parking: any) => {
     setSelectedParking(parking);
+    setSelectedSlotId(null); // Clear any pre-selected slot when starting new booking flow
     setPreviousScreenOfSlot(currentScreen);
-    setCurrentScreen('SlotSelection');
+    setCurrentScreen('ConfirmBooking'); // Step 1: Clicking "Reserve Slots" opens Confirm Booking page
   };
 
   const getSpotCoordinates = (name: string) => {
@@ -314,7 +394,7 @@ const App = () => {
                 )}
                 {currentScreen === 'Bookings' && (
                   <BookingsScreen
-                    onViewDetails={(parkingName: any, slotId: any) => {
+                    onViewDetails={(parkingName: any, slotId: any, bookingObj: any) => {
                       const coords = getSpotCoordinates(parkingName);
                       setSelectedParking({
                         name: parkingName,
@@ -322,6 +402,16 @@ const App = () => {
                         lng: coords.lng,
                       });
                       setSelectedSlotId(slotId);
+                      if (bookingObj) {
+                        setPendingBooking({
+                          booking_id: bookingObj.id,
+                          booking_code: bookingObj.code,
+                          start_time: bookingObj.rawStartTime || bookingObj.start_time,
+                          slot_number: bookingObj.slotNum,
+                          vehicle_number: bookingObj.vehicle,
+                          status: bookingObj.status,
+                        });
+                      }
                       setPreviousScreenOfPass('Bookings');
                       setCurrentScreen('BookingPass');
                     }}
@@ -355,33 +445,40 @@ const App = () => {
                     onReserve={navigateToReserve}
                   />
                 )}
-                {currentScreen === 'SlotSelection' && (
-                  <SlotSelection
-                    parking={selectedParking}
-                    onBack={() => setCurrentScreen(previousScreenOfSlot)}
-                    onContinue={(slot: any) => {
-                      // slot is the full slot object: { id, rawId, type, status, zone }
-                      setSelectedSlotId(slot);
-                      setCurrentScreen('ConfirmBooking');
-                    }}
-                  />
-                )}
+                {/* Step 1 & 2: User Inputs Booking Details */}
                 {currentScreen === 'ConfirmBooking' && (
                   <ConfirmBooking
                     parking={selectedParking}
-                    selectedSlot={selectedSlotId}  // full slot object with rawId
-                    onBack={() => setCurrentScreen('SlotSelection')}
-                    onConfirm={() => {
-                      setCurrentScreen('Payment');
+                    selectedSlot={selectedSlotId}
+                    onBack={() => setCurrentScreen(previousScreenOfSlot || 'ParkingDetail')}
+                    onConfirm={(bookingPayload: any) => {
+                      setPendingUserBookingDetails(bookingPayload);
+                      setCurrentScreen('SlotSelection'); // Proceed to Select Parking Slot screen
                     }}
                   />
                 )}
+                {/* Step 3: Real-time DB Check against selected timing to display Available vs Booked slots */}
+                {currentScreen === 'SlotSelection' && (
+                  <SlotSelection
+                    parking={selectedParking}
+                    bookingDetails={pendingUserBookingDetails}
+                    onBack={() => setCurrentScreen('ConfirmBooking')}
+                    onContinue={(slot: any) => {
+                      setSelectedSlotId(slot);
+                      setCurrentScreen('Payment'); // Step 4: Proceed to Payment after slot selection
+                    }}
+                  />
+                )}
+                {/* Step 4: Payment & Finalization */}
                 {currentScreen === 'Payment' && (
                   <Payment
                     parking={selectedParking}
                     slotId={slotDisplayId}
-                    onBack={() => setCurrentScreen('ConfirmBooking')}
-                    onPaySuccess={() => {
+                    selectedSlot={selectedSlotId}
+                    bookingDetails={pendingUserBookingDetails}
+                    onBack={() => setCurrentScreen('SlotSelection')}
+                    onPaySuccess={(finalBooking: any) => {
+                      if (finalBooking) setPendingBooking(finalBooking);
                       setCurrentScreen('BookingSuccess');
                     }}
                   />
@@ -409,6 +506,7 @@ const App = () => {
                   <BookingPass
                     parking={selectedParking}
                     slotId={slotDisplayId}
+                    bookingData={pendingBooking}
                     onBack={() => setCurrentScreen(previousScreenOfPass)}
                     onNavigateToSlot={() => {
                       setPreviousScreenOfNavigation('BookingPass');

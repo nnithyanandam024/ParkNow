@@ -1,37 +1,55 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, StatusBar } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFD',
+    backgroundColor: '#F8FAFC',
   },
 
-  /* ───── Header ───── */
+  /* ───── Header Bar ───── */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 36 : 12,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 8 : 44,
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
-    zIndex: 20,
+    borderBottomColor: '#E2E8F0',
+    zIndex: 30,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   backButton: {
     padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1D20',
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 12,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   avatarImage: {
     width: '100%',
@@ -43,78 +61,92 @@ export const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
-  },
-  map: {
-    flex: 1,
+    backgroundColor: '#E2E8F0',
   },
 
-  /* ───── Instruction Banner ───── */
-  guidancePanel: {
+  /* ───── Floating Turn Banner ───── */
+  routeBanner: {
     position: 'absolute',
-    top: 20,
+    top: 16,
     left: 16,
     right: 16,
-    backgroundColor: '#E8EFFF',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-    zIndex: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 35,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
-  directionIconContainer: {
-    backgroundColor: '#1A5FB4',
+  turnCircle: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 22,
+    backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
-  directionTextContainer: {
+  routeBannerTextCol: {
     flex: 1,
   },
-  directionLabel: {
+  distanceText: {
     fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '500',
+    fontWeight: '700',
+    color: '#64748B',
     marginBottom: 2,
   },
-  directionValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D20',
+  instructionText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 
-  /* ───── Floating Map Controls ───── */
-  floatingControls: {
+  /* ───── Floating Map Action Controls ───── */
+  mapFloatingActions: {
     position: 'absolute',
-    right: 16,
-    bottom: 280, // Sits comfortably above the bottom sheet
-    zIndex: 10,
-    gap: 12,
+    left: 16,
+    bottom: 265,
+    zIndex: 35,
+    gap: 10,
   },
-  floatingBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
 
-  /* ───── Bottom Sheet ───── */
-  bottomSheet: {
+  /* ───── Bottom Sheet Drawer ───── */
+  bottomDrawer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -122,113 +154,149 @@ export const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 10,
-    zIndex: 10,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderTopWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 40,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
   dragHandle: {
-    width: 48,
-    height: 5,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2.5,
+    width: 40,
+    height: 4,
+    backgroundColor: '#CBD5E1',
+    borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  sheetHeader: {
+
+  /* Destination Row */
+  destinationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 16,
   },
-  locationTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1A1D20',
+  destLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    marginRight: 12,
-  },
-  slotBadge: {
-    backgroundColor: '#4ADE80',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  slotBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  addressIcon: {
-    marginRight: 6,
-  },
-  addressText: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  statIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: 10,
   },
-  statLabel: {
-    fontSize: 11,
-    color: '#6B7280',
+  redPinCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  destTextCol: {
+    flex: 1,
+  },
+  destName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  destAddress: {
+    fontSize: 12,
     fontWeight: '600',
+    color: '#64748B',
+  },
+
+  /* Assigned Slot Badge */
+  slotBadge: {
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  slotBadgeLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
     marginBottom: 1,
   },
-  statValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A5FB4',
+  slotBadgeValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  arriveButton: {
-    backgroundColor: '#1A5FB4',
-    borderRadius: 28,
-    paddingVertical: 15,
+
+  /* Metrics Cards Row */
+  metricsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1A5FB4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  arriveButtonText: {
+  metricItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  metricLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  metricValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  metricDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#E2E8F0',
+  },
+
+  /* Arrival Action Button */
+  arriveBtn: {
+    height: 50,
+    backgroundColor: '#0052cc',
+    borderRadius: 25,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0052cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  arriveBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
+    letterSpacing: 0.5,
   },
 });

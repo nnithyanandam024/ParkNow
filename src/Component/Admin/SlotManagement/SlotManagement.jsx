@@ -1,75 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   SafeAreaView,
   Text,
   View,
   TouchableOpacity,
-  FlatList,
   TextInput,
   Modal,
   Alert,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import { styles } from './SlotManagementStyles';
-import { adminService } from '../../../services/adminService';
-import { parkingService } from '../../../services/parkingService';
+import { supabase } from '../../../config/supabase';
+import { realtimeService } from '../../../services/realtimeService';
 
 const SlotManagement = () => {
-  // Admin Slot Inventory State
-  const DEFAULT_SLOTS = [
-    { id: '1', number: 'A-101', lot: 'Lot A - Central Plaza', type: 'Standard', status: 'Available', rate: '₹80' },
-    { id: '2', number: 'A-102', lot: 'Lot A - Central Plaza', type: 'Standard', status: 'Occupied', rate: '₹80' },
-    { id: '3', number: 'A-103', lot: 'Lot A - Central Plaza', type: 'EV Charging', status: 'Available', rate: '₹120' },
-    { id: '4', number: 'B-101', lot: 'Lot B - Waterfront', type: 'Accessible', status: 'Available', rate: '₹100' },
-    { id: '5', number: 'B-102', lot: 'Lot B - Waterfront', type: 'Standard', status: 'Occupied', rate: '₹100' },
-    { id: '6', number: 'C-101', lot: 'Lot C - Skyline Hub', type: 'Standard', status: 'Maintenance', rate: '₹90' },
-  ];
-  const [slots, setSlots] = useState(DEFAULT_SLOTS);
-
-  useEffect(() => {
-    async function loadSlots() {
-      const res = await parkingService.getSlotsByLocation(1);
-      if (res.success && res.data && res.data.length > 0) {
-        const mapped = res.data.map((s) => ({
-          id: String(s.slot_id),
-          number: s.slot_number,
-          lot: 'Downtown Grand Plaza',
-          type: s.slot_type === 'EV' ? 'EV Charging' : 'Standard',
-          status: s.status.charAt(0) + s.status.slice(1).toLowerCase(),
-          rate: '₹80',
-        }));
-        setSlots(mapped);
-      }
-    }
-    loadSlots();
-  }, []);
+  const [slots, setSlots] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('All'); // 'All', 'Available', 'Occupied', 'EV Charging', 'Accessible', 'Maintenance'
+  const [filter, setFilter] = useState('All'); // 'All', 'Available', 'Occupied', 'EV Charging', 'Maintenance'
 
   // Modals and Form States
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible]       = useState(false);
   const [lotModalVisible, setLotModalVisible] = useState(false);
-  const [editingSlot, setEditingSlot] = useState(null);
+  const [editingSlot, setEditingSlot]         = useState(null);
   
   const [formNumber, setFormNumber] = useState('');
-  const [formLot, setFormLot] = useState('Lot A - Central Plaza');
-  const [formType, setFormType] = useState('Standard');
-  const [formStatus, setFormStatus] = useState('Available');
-  const [formRate, setFormRate] = useState('₹80');
+  const [formFloor, setFormFloor]   = useState('Ground Floor');
+  const [formLotId, setFormLotId]   = useState(1);
+  const [formType, setFormType]     = useState('4-WHEELER'); // '4-WHEELER' | '2-WHEELER' | 'EV' | 'ACCESSIBLE'
+  const [formStatus, setFormStatus] = useState('AVAILABLE'); // 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE'
 
-  const [newLotName, setNewLotName] = useState('');
+  // New Location Form State (matching schema)
+  const [newLotName, setNewLotName]       = useState('');
+  const [newLotAddress, setNewLotAddress] = useState('');
+  const [newLotCity, setNewLotCity]       = useState('Sathyamangalam');
+
+  // ── 1. Fetch live slots & locations from Supabase ────────────────────────
+  const loadSlotsFromDB = useCallback(async () => {
+    try {
+      // Fetch locations (schema: location_id, name, address, city, total_capacity, latitude, longitude)
+      const { data: locs } = await supabase
+        .from('parking_locations')
+        .select('*')
+        .order('location_id', { ascending: true });
+      if (locs) setLocations(locs);
+
+      // Fetch slots joined with location (schema: slot_id, location_id, slot_number, floor_level, slot_type, status, is_active)
+      const { data: slotsData, error } = await supabase
+        .from('parking_slots')
+        .select('*, parking_locations(name, address, city)')
+        .eq('is_active', true)
+        .order('slot_id', { ascending: true });
+
+      if (!error && slotsData) {
+        const mapped = slotsData.map((s) => {
+          let typeLabel = s.slot_type || '4-WHEELER';
+          if (s.slot_type === 'EV') typeLabel = 'EV Charging';
+          else if (s.slot_type === 'ACCESSIBLE') typeLabel = 'Accessible';
+          else if (s.slot_type === '2-WHEELER') typeLabel = '2-Wheeler';
+          else if (s.slot_type === '4-WHEELER') typeLabel = '4-Wheeler';
+
+          let statusLabel = s.status || 'AVAILABLE';
+          if (s.status === 'AVAILABLE') statusLabel = 'Available';
+          else if (s.status === 'OCCUPIED') statusLabel = 'Occupied';
+          else if (s.status === 'RESERVED') statusLabel = 'Reserved';
+          else if (s.status === 'MAINTENANCE') statusLabel = 'Maintenance';
+
+          return {
+            id:         String(s.slot_id),
+            rawId:      s.slot_id,
+            number:     s.slot_number,
+            floor:      s.floor_level || 'Ground Floor',
+            lot:        s.parking_locations?.name || 'Main Parking Lot',
+            lotCity:    s.parking_locations?.city || 'Sathyamangalam',
+            type:       typeLabel,
+            rawType:    s.slot_type || '4-WHEELER',
+            status:     statusLabel,
+            rawStatus:  s.status || 'AVAILABLE',
+            raw:        s,
+          };
+        });
+        setSlots(mapped);
+      }
+    } catch (e) {
+      console.log('SlotManagement DB fetch error:', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSlotsFromDB();
+
+    // Subscribe to Realtime updates on parking_slots
+    const channelSlots = realtimeService.subscribeToSlots(1, () => {
+      loadSlotsFromDB();
+    });
+
+    return () => {
+      realtimeService.unsubscribe(channelSlots);
+    };
+  }, [loadSlotsFromDB]);
 
   // Handle open modal for new slot
   const handleAddNewSlot = () => {
     setEditingSlot(null);
     setFormNumber('');
-    setFormLot('Lot A - Central Plaza');
-    setFormType('Standard');
-    setFormStatus('Available');
-    setFormRate('₹80');
+    setFormFloor('Ground Floor');
+    setFormLotId(locations.length > 0 ? locations[0].location_id : 1);
+    setFormType('4-WHEELER');
+    setFormStatus('AVAILABLE');
     setModalVisible(true);
   };
 
@@ -77,89 +122,139 @@ const SlotManagement = () => {
   const handleEditSlot = (slot) => {
     setEditingSlot(slot);
     setFormNumber(slot.number);
-    setFormLot(slot.lot);
-    setFormType(slot.type);
-    setFormStatus(slot.status);
-    setFormRate(slot.rate);
+    setFormFloor(slot.floor || 'Ground Floor');
+    setFormLotId(slot.raw?.location_id || 1);
+    setFormType(slot.rawType || '4-WHEELER');
+    setFormStatus(slot.rawStatus || 'AVAILABLE');
     setModalVisible(true);
   };
 
-  // Save Slot (Create or Update)
+  // Save Slot (Create or Update in Supabase Table DB matching schema)
   const handleSaveSlot = async () => {
     if (!formNumber.trim()) {
       Alert.alert('Validation Error', 'Please enter a slot number.');
       return;
     }
 
-    if (!editingSlot) {
-      // Create in Supabase
-      const slotTypeMap = { 'EV Charging': 'EV', 'Standard': '4-WHEELER', 'Accessible': '4-WHEELER' };
-      const res = await adminService.addParkingSlot({
-        locationId: 1,
-        slotNumber: formNumber,
-        floorLevel: 'Ground Floor',
-        slotType: slotTypeMap[formType] || '4-WHEELER',
-      });
-      if (res.success) {
-        Alert.alert('Slot Created', `Slot ${formNumber} added to Supabase database!`);
-      }
-    }
+    try {
+      if (editingSlot) {
+        // Update DB row (schema: location_id, slot_number, floor_level, slot_type, status)
+        const { error } = await supabase
+          .from('parking_slots')
+          .update({
+            location_id: formLotId || 1,
+            slot_number: formNumber.trim().toUpperCase(),
+            floor_level: formFloor || 'Ground Floor',
+            slot_type:   formType,
+            status:      formStatus,
+          })
+          .eq('slot_id', editingSlot.rawId);
 
-    if (editingSlot) {
-      setSlots(prev => prev.map(s => s.id === editingSlot.id ? {
-        ...s, number: formNumber, lot: formLot, type: formType, status: formStatus, rate: formRate,
-      } : s));
-    } else {
-      setSlots(prev => [{ id: Date.now().toString(), number: formNumber, lot: formLot, type: formType, status: formStatus, rate: formRate }, ...prev]);
+        if (error) throw error;
+        Alert.alert('Success', `Slot ${formNumber.trim().toUpperCase()} updated successfully.`);
+      } else {
+        // Insert new DB row (schema: location_id, slot_number, floor_level, slot_type, status, is_active)
+        const { error } = await supabase
+          .from('parking_slots')
+          .insert([
+            {
+              location_id: formLotId || 1,
+              slot_number: formNumber.trim().toUpperCase(),
+              floor_level: formFloor || 'Ground Floor',
+              slot_type:   formType,
+              status:      formStatus,
+              is_active:   true,
+            },
+          ]);
+
+        if (error) throw error;
+        Alert.alert('Success', `Slot ${formNumber.trim().toUpperCase()} created and integrated in DB.`);
+      }
+
+      await loadSlotsFromDB();
+      setModalVisible(false);
+    } catch (e) {
+      console.error('Save slot error:', e);
+      Alert.alert('Error', e.message || 'Could not save slot configuration.');
     }
-    setModalVisible(false);
   };
 
-  // Create New Lot
-  const handleSaveNewLot = () => {
+  // Create New Location (schema: name, address, city, total_capacity)
+  const handleSaveNewLot = async () => {
     if (!newLotName.trim()) {
-      Alert.alert('Validation Error', 'Please enter a parking lot name.');
+      Alert.alert('Validation Error', 'Please enter a location name.');
       return;
     }
-    const defaultSlot = {
-      id: Date.now().toString(),
-      number: 'A-01',
-      lot: newLotName.trim(),
-      type: 'Standard',
-      status: 'Available',
-      rate: '₹80',
-    };
-    setSlots(prev => [defaultSlot, ...prev]);
-    setNewLotName('');
-    setLotModalVisible(false);
-    Alert.alert('Lot Created', `Parking Zone "${newLotName.trim()}" has been registered.`);
+    try {
+      const { data, error } = await supabase
+        .from('parking_locations')
+        .insert([
+          {
+            name: newLotName.trim(),
+            address: newLotAddress.trim() || 'BIT Campus Zone',
+            city: newLotCity.trim() || 'Sathyamangalam',
+            total_capacity: 0, // auto-updated by trg_sync_slot_count trigger on insertion of slots
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      await loadSlotsFromDB();
+      if (data && data.length > 0) {
+        setFormLotId(data[0].location_id);
+      }
+      setNewLotName('');
+      setNewLotAddress('');
+      setLotModalVisible(false);
+      Alert.alert('Success', `New Parking Location "${newLotName.trim()}" created and integrated in DB.`);
+    } catch (e) {
+      console.error('Save lot error:', e);
+      Alert.alert('Error', e.message || 'Could not create new location.');
+    }
   };
 
-  // Delete Slot
-  const handleDeleteSlot = (id) => {
+  // Delete Slot from Supabase Table DB
+  const handleDeleteSlot = (id, rawId) => {
     Alert.alert(
       'Delete Slot',
-      'Are you sure you want to delete this parking slot from the inventory?',
+      'Are you sure you want to delete this parking slot from the database?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Delete', 
           style: 'destructive', 
-          onPress: () => setSlots(prev => prev.filter(s => s.id !== id)) 
+          onPress: async () => {
+            try {
+              await supabase.from('parking_slots').delete().eq('slot_id', rawId);
+              await loadSlotsFromDB();
+            } catch (e) {
+              console.error('Delete slot error:', e);
+            }
+          } 
         }
       ]
     );
   };
 
-  // Quick toggle status
-  const handleToggleStatus = (slot) => {
+  // Quick toggle status in Supabase Table DB
+  const handleToggleStatus = async (slot) => {
     const statusCycle = {
-      'Available': 'Occupied',
-      'Occupied': 'Maintenance',
-      'Maintenance': 'Available'
+      'Available':   'OCCUPIED',
+      'Occupied':    'MAINTENANCE',
+      'Maintenance': 'AVAILABLE'
     };
-    const nextStatus = statusCycle[slot.status] || 'Available';
-    setSlots(prev => prev.map(s => s.id === slot.id ? { ...s, status: nextStatus } : s));
+    const nextDbStatus = statusCycle[slot.status] || 'AVAILABLE';
+    try {
+      await supabase
+        .from('parking_slots')
+        .update({ status: nextDbStatus })
+        .eq('slot_id', slot.rawId);
+
+      await loadSlotsFromDB();
+    } catch (e) {
+      console.log('Toggle status error:', e);
+    }
   };
 
   // Filter & Search Logic
@@ -202,11 +297,11 @@ const SlotManagement = () => {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Lot Overview Banner */}
+        {/* Lot Overview Banner (Live Table DB Metrics) */}
         <View style={styles.overviewCard}>
           <View style={styles.overviewHeader}>
             <View>
-              <Text style={styles.overviewSubtitle}>ADMIN INVENTORY</Text>
+              <Text style={styles.overviewSubtitle}>LIVE TABLE DB INVENTORY</Text>
               <Text style={styles.overviewTitle}>{slots.length} Total Slots</Text>
             </View>
             <FeatherIcon name="layers" size={32} color="#DBEAFE" />
@@ -261,7 +356,12 @@ const SlotManagement = () => {
         </View>
 
         {/* Slot Inventory List Cards */}
-        {filteredSlots.length === 0 ? (
+        {loading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#0052cc" />
+            <Text style={{ marginTop: 10, color: '#64748B', fontSize: 13 }}>Loading slots from database...</Text>
+          </View>
+        ) : filteredSlots.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
             <FeatherIcon name="layers" size={32} color="#94A3B8" style={{ marginBottom: 8 }} />
             <Text style={{ fontSize: 14, color: '#64748B', fontWeight: '600' }}>No matching parking slots found.</Text>
@@ -288,7 +388,7 @@ const SlotManagement = () => {
                 <View style={styles.typeBadge}>
                   <Text style={styles.typeText}>{item.type}</Text>
                 </View>
-                <Text style={styles.rateText}>{item.rate}/hr</Text>
+                <Text style={styles.rateText}>{item.floor}</Text>
               </View>
 
               {/* Action Buttons */}
@@ -311,7 +411,7 @@ const SlotManagement = () => {
 
                 <TouchableOpacity 
                   style={[styles.iconActionBtn, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}
-                  onPress={() => handleDeleteSlot(item.id)}
+                  onPress={() => handleDeleteSlot(item.id, item.rawId)}
                   activeOpacity={0.8}
                 >
                   <FeatherIcon name="trash-2" size={16} color="#EF4444" />
@@ -341,55 +441,79 @@ const SlotManagement = () => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Parking Lot / Zone</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. Lot A - Central Plaza"
-                placeholderTextColor="#94A3B8"
-                value={formLot}
-                onChangeText={setFormLot}
-              />
+              <Text style={styles.inputLabel}>Parking Location / Facility</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+                {locations.map((loc) => (
+                  <TouchableOpacity
+                    key={loc.location_id}
+                    style={[
+                      styles.optionPill,
+                      formLotId === loc.location_id && styles.optionPillActive,
+                      { marginRight: 8 }
+                    ]}
+                    onPress={() => setFormLotId(loc.location_id)}
+                  >
+                    <Text style={[styles.optionPillText, formLotId === loc.location_id && styles.optionPillTextActive]}>
+                      {loc.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Slot Type</Text>
+              <Text style={styles.inputLabel}>Floor Level</Text>
               <View style={styles.optionPillRow}>
-                {['Standard', 'EV Charging', 'Accessible'].map((t) => (
+                {['Ground Floor', 'Floor 1', 'Floor 2', 'Basement'].map((fl) => (
                   <TouchableOpacity
-                    key={t}
-                    style={[styles.optionPill, formType === t && styles.optionPillActive]}
-                    onPress={() => setFormType(t)}
+                    key={fl}
+                    style={[styles.optionPill, formFloor === fl && styles.optionPillActive]}
+                    onPress={() => setFormFloor(fl)}
                   >
-                    <Text style={[styles.optionPillText, formType === t && styles.optionPillTextActive]}>{t}</Text>
+                    <Text style={[styles.optionPillText, formFloor === fl && styles.optionPillTextActive]}>{fl}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Status</Text>
-              <View style={styles.optionPillRow}>
-                {['Available', 'Occupied', 'Maintenance'].map((st) => (
+              <Text style={styles.inputLabel}>Slot Type (Vehicle Type Enum)</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+                {[
+                  { key: '4-WHEELER',  label: '4-Wheeler' },
+                  { key: '2-WHEELER',  label: '2-Wheeler' },
+                  { key: 'EV',         label: 'EV Charging' },
+                  { key: 'ACCESSIBLE', label: 'Accessible' },
+                ].map((t) => (
                   <TouchableOpacity
-                    key={st}
-                    style={[styles.optionPill, formStatus === st && styles.optionPillActive]}
-                    onPress={() => setFormStatus(st)}
+                    key={t.key}
+                    style={[styles.optionPill, formType === t.key && styles.optionPillActive, { marginRight: 8 }]}
+                    onPress={() => setFormType(t.key)}
                   >
-                    <Text style={[styles.optionPillText, formStatus === st && styles.optionPillTextActive]}>{st}</Text>
+                    <Text style={[styles.optionPillText, formType === t.key && styles.optionPillTextActive]}>{t.label}</Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Hourly Rate (₹)</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. ₹80"
-                placeholderTextColor="#94A3B8"
-                value={formRate}
-                onChangeText={setFormRate}
-              />
+              <Text style={styles.inputLabel}>Status (Slot Status Enum)</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+                {[
+                  { key: 'AVAILABLE',   label: 'Available' },
+                  { key: 'OCCUPIED',    label: 'Occupied' },
+                  { key: 'RESERVED',    label: 'Reserved' },
+                  { key: 'MAINTENANCE', label: 'Maintenance' },
+                ].map((st) => (
+                  <TouchableOpacity
+                    key={st.key}
+                    style={[styles.optionPill, formStatus === st.key && styles.optionPillActive, { marginRight: 8 }]}
+                    onPress={() => setFormStatus(st.key)}
+                  >
+                    <Text style={[styles.optionPillText, formStatus === st.key && styles.optionPillTextActive]}>{st.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
             <View style={styles.modalActions}>
@@ -404,20 +528,42 @@ const SlotManagement = () => {
         </View>
       </Modal>
 
-      {/* Add New Lot Modal */}
+      {/* Add New Location Modal (schema: name, address, city) */}
       <Modal visible={lotModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Register New Parking Lot</Text>
+            <Text style={styles.modalTitle}>Register New Parking Location</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Lot / Facility Name</Text>
+              <Text style={styles.inputLabel}>Location / Facility Name</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Lot D - Tech Park"
+                placeholder="e.g. BIT Plaza Parking"
                 placeholderTextColor="#94A3B8"
                 value={newLotName}
                 onChangeText={setNewLotName}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Street Address</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Sathyamangalam Main Rd"
+                placeholderTextColor="#94A3B8"
+                value={newLotAddress}
+                onChangeText={setNewLotAddress}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>City</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Sathyamangalam"
+                placeholderTextColor="#94A3B8"
+                value={newLotCity}
+                onChangeText={setNewLotCity}
               />
             </View>
 
@@ -426,7 +572,7 @@ const SlotManagement = () => {
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveNewLot}>
-                <Text style={styles.saveBtnText}>Create Lot</Text>
+                <Text style={styles.saveBtnText}>Create Location</Text>
               </TouchableOpacity>
             </View>
           </View>

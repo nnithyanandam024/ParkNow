@@ -62,19 +62,39 @@ const BookingsScreen = ({ onViewDetails }) => {
 
       if (error) throw error;
 
-      const mapped = (data || []).map((b) => ({
-        id:        String(b.booking_id),
-        code:      b.booking_code,
-        name:      b.parking_locations?.name || 'Downtown Grand Plaza',
-        slotNum:   b.parking_slots?.slot_number || 'A-101',
-        status:    STATUS_LABEL[b.status]  || b.status,
-        tab:       STATUS_TO_TAB[b.status] || 'Upcoming',
-        date:      new Date(b.start_time).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        time:      new Date(b.start_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        price:     `₹${Number(b.total_amount).toFixed(2)}`,
-        vehicle:   b.vehicles?.vehicle_number || 'N/A',
-        model:     b.vehicles?.model_name || '',
-      }));
+      const now = new Date();
+      const mapped = (data || []).map((b) => {
+        const startTime = b.start_time ? new Date(b.start_time) : now;
+        const endTime = b.end_time ? new Date(b.end_time) : new Date(startTime.getTime() + 2 * 3600000);
+        const isPast = endTime < now || startTime.getTime() + 3600000 < now.getTime();
+
+        let tabName = 'Upcoming';
+        if (b.status === 'CANCELLED') {
+          tabName = 'Cancelled';
+        } else if (b.status === 'COMPLETED' || isPast) {
+          tabName = 'Completed';
+        }
+
+        let statusLabel = STATUS_LABEL[b.status] || b.status;
+        if (isPast && b.status !== 'CANCELLED') {
+          statusLabel = 'Finished';
+        }
+
+        return {
+          id:           String(b.booking_id),
+          code:         b.booking_code,
+          name:         b.parking_locations?.name || 'BIT College Campus Parking',
+          slotNum:      b.parking_slots?.slot_number || 'A-101',
+          status:       statusLabel,
+          tab:          tabName,
+          rawStartTime: b.start_time,
+          date:         startTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          time:         startTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          price:        `₹${Number(b.total_amount || 40).toFixed(2)}`,
+          vehicle:      b.vehicles?.vehicle_number || 'TN-38-AB-1234',
+          model:        b.vehicles?.model_name || '',
+        };
+      });
 
       setBookings(mapped);
     } catch (e) {
@@ -162,7 +182,7 @@ const BookingsScreen = ({ onViewDetails }) => {
           <TouchableOpacity
             style={buttonStyle}
             activeOpacity={0.7}
-            onPress={() => onViewDetails?.(booking.name, booking.slotNum)}
+            onPress={() => onViewDetails?.(booking.name, booking.slotNum, booking)}
           >
             <Text style={buttonTextStyle}>View Details</Text>
           </TouchableOpacity>

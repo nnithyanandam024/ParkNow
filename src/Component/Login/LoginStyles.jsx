@@ -1,4 +1,4 @@
-import { StyleSheet, Platform, Dimensions } from 'react-native';
+import { StyleSheet, Platform, Dimensions, StatusBar } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -27,17 +27,17 @@ export const styles = StyleSheet.create({
     backgroundColor: '#0052cc',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 16 : 50,
     paddingBottom: 20,
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 16,
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 12 : 50,
     left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,

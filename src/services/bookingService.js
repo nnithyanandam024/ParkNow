@@ -79,19 +79,32 @@ export const bookingService = {
   },
 
   /**
-   * Process Online Payment for a booking
+   * Process and record Payment for a booking in public.payments
    */
-  async recordPayment({ bookingId, amount, paymentMethod, transactionId }) {
+  async recordPayment({
+    bookingId,
+    amount,
+    paymentMethod,
+    paymentStatus = 'SUCCESS',
+    transactionId,
+    collectedByStaffId = null,
+  }) {
     try {
+      const txnId =
+        transactionId ||
+        `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
       const { data, error } = await supabase
         .from('payments')
         .insert([
           {
             booking_id: bookingId,
-            amount: amount,
-            payment_method: paymentMethod,
-            payment_status: 'SUCCESS',
-            transaction_id: transactionId || `TXN-${Date.now()}`,
+            amount: Number(amount),
+            payment_method: paymentMethod || 'UPI',
+            payment_status: paymentStatus || 'SUCCESS',
+            transaction_id: txnId,
+            collected_by_staff_id: collectedByStaffId,
+            paid_at: new Date().toISOString(),
           },
         ])
         .select()

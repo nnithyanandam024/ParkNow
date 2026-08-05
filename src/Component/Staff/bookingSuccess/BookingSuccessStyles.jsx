@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
@@ -7,23 +7,24 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: Platform.OS === 'android' ? 60 : 45,
     paddingBottom: 40,
     alignItems: 'center',
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
+    marginTop: 16,
     paddingHorizontal: 12,
   },
   checkCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     shadowColor: '#16A34A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

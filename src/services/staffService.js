@@ -2,82 +2,164 @@ import { supabase } from '../config/supabase';
 
 export const staffService = {
   /**
-   * Verify Scanned Booking QR Code (Used in Staff QRScanner)
+   * Verify Scanned / Manually Entered Booking Code or License Plate (Used in Staff QRScanner)
+   * Validates DB start_time, end_time, and status, and logs into public.verification_logs
    */
   async verifyBookingQRCode(bookingCode, staffId = 1) {
     try {
-      // 1. Fetch booking by code
-      const { data: booking, error } = await supabase
+      const searchStr = String(bookingCode).trim();
+
+      // 1. Fetch booking by booking_code OR vehicle_number from public.bookings
+      let booking = null;
+
+      // Query A: Search by booking_code exact/partial match
+      const { data: byCode } = await supabase
         .from('bookings')
         .select(`
           *,
           users (full_name, phone),
-          parking_locations (name),
-          parking_slots (slot_number),
+          parking_locations (name, address),
+          parking_slots (slot_number, floor_level),
           vehicles (vehicle_number, vehicle_type)
         `)
-        .eq('booking_code', bookingCode)
-        .single();
+        .or(`booking_code.eq.${searchStr},booking_code.ilike.%${searchStr}%`)
+        .order('created_at', { ascending: false });
 
-      if (error || !booking) {
+      if (byCode && byCode.length > 0) {
+        booking = byCode[0];
+      } else {
+        // Query B: Search by vehicle plate number
+        const { data: byPlate } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            users (full_name, phone),
+            parking_locations (name, address),
+            parking_slots (slot_number, floor_level),
+            vehicles!inner (vehicle_number, vehicle_type)
+          `)
+          .ilike('vehicles.vehicle_number', `%${searchStr}%`)
+          .order('created_at', { ascending: false });
+
+        if (byPlate && byPlate.length > 0) {
+          booking = byPlate[0];
+        }
+      }
+
+      if (!booking) {
         return {
           success: false,
-          error: 'Invalid or Unrecognized Parking Pass Code',
+          error: `No active booking found for "${searchStr}". Please check the ticket code or vehicle plate.`,
         };
       }
 
-      // 2. Perform actions depending on current status
-      let newStatus = booking.status;
-      let logAction = 'ENTRY_SCAN';
+      const now = new Date();
+      const startTime = new Date(booking.start_time);
+      const endTime = new Date(booking.end_time);
 
-      if (booking.status === 'CONFIRMED' || booking.status === 'PENDING') {
-        newStatus = 'CHECKED_IN';
+      const startTimeStr = startTime.toLocaleString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const endTimeStr = endTime.toLocaleString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      // 2. Perform Date & Time Validation Checks
+      let logAction = 'ENTRY_SCAN';
+      let isSuccess = true;
+      let remarks = '';
+      let failureReason = '';
+
+      if (booking.status === 'CANCELLED') {
+        isSuccess = false;
+        failureReason = `Booking was CANCELLED.`;
+        remarks = `Failed: Booking ${booking.booking_code} was cancelled.`;
+      } else if (booking.status === 'COMPLETED') {
+        isSuccess = false;
+        failureReason = `Ticket ALREADY USED & COMPLETED.`;
+        remarks = `Failed: Booking ${booking.booking_code} already completed.`;
+      } else if (booking.status === 'CONFIRMED' || booking.status === 'PENDING') {
         logAction = 'ENTRY_SCAN';
 
-        // Update booking actual_check_in & status
-        await supabase
-          .from('bookings')
-          .update({ status: 'CHECKED_IN', actual_check_in: new Date().toISOString() })
-          .eq('booking_id', booking.booking_id);
+        // Buffer window: Allow entry starting 30 mins before scheduled start_time
+        const earlyBuffer = new Date(startTime.getTime() - 30 * 60 * 1000);
 
-        // Update slot status to OCCUPIED
-        await supabase
-          .from('parking_slots')
-          .update({ status: 'OCCUPIED' })
-          .eq('slot_id', booking.slot_id);
+        if (now < earlyBuffer) {
+          isSuccess = false;
+          failureReason = `TOO EARLY! Booking start time is ${startTimeStr}.`;
+          remarks = `Failed: Arrival at ${now.toLocaleTimeString()} is too early for start time ${startTimeStr}.`;
+        } else if (now > endTime) {
+          isSuccess = false;
+          failureReason = `BOOKING EXPIRED! Expired at ${endTimeStr}.`;
+          remarks = `Failed: Arrival at ${now.toLocaleTimeString()} is after end time ${endTimeStr}.`;
+        } else {
+          // Valid Entry! Update booking status to CHECKED_IN and slot status to OCCUPIED
+          newStatus = 'CHECKED_IN';
+          remarks = `Success: Entry verified at ${now.toLocaleTimeString()}. Scheduled: ${startTimeStr} - ${endTimeStr}`;
+
+          await supabase
+            .from('bookings')
+            .update({ status: 'CHECKED_IN', actual_check_in: now.toISOString() })
+            .eq('booking_id', booking.booking_id);
+
+          await supabase
+            .from('parking_slots')
+            .update({ status: 'OCCUPIED' })
+            .eq('slot_id', booking.slot_id);
+        }
       } else if (booking.status === 'CHECKED_IN') {
-        newStatus = 'COMPLETED';
         logAction = 'EXIT_SCAN';
+        remarks = `Success: Exit verified at ${now.toLocaleTimeString()}. Scheduled end: ${endTimeStr}`;
 
-        // Update booking actual_check_out & status
         await supabase
           .from('bookings')
-          .update({ status: 'COMPLETED', actual_check_out: new Date().toISOString() })
+          .update({ status: 'COMPLETED', actual_check_out: now.toISOString() })
           .eq('booking_id', booking.booking_id);
 
-        // Release slot back to AVAILABLE
         await supabase
           .from('parking_slots')
           .update({ status: 'AVAILABLE' })
           .eq('slot_id', booking.slot_id);
       }
 
-      // 3. Log to verification_logs table
+      // 3. Record verification attempt in public.verification_logs
       await supabase.from('verification_logs').insert([
         {
           booking_id: booking.booking_id,
           verified_by_staff_id: staffId,
           action: logAction,
-          status: 'SUCCESS',
-          remarks: `Pass verified. Action: ${logAction}`,
+          status: isSuccess ? 'SUCCESS' : 'EXPIRED',
+          remarks: remarks.slice(0, 255),
         },
       ]);
+
+      if (!isSuccess) {
+        return {
+          success: false,
+          error: failureReason,
+          booking: {
+            ...booking,
+            startTimeStr,
+            endTimeStr,
+          },
+        };
+      }
 
       return {
         success: true,
         booking: {
           ...booking,
-          status: newStatus,
+          status: booking.status === 'CHECKED_IN' ? 'COMPLETED' : 'CHECKED_IN',
+          startTimeStr,
+          endTimeStr,
         },
         action: logAction,
       };

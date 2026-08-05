@@ -88,7 +88,7 @@ const ProfileScreen = ({ onLogout, onNavigateToBookings }) => {
             </TouchableOpacity>
           </View>
           <Text style={styles.userName}>Alex Johnson</Text>
-          <Text style={styles.userMeta}>🚗 Tesla Model 3 • ABC-1234</Text>
+          <Text style={styles.userMeta}>Tesla Model 3 • ABC-1234</Text>
         </View>
 
         {/* Account Info Card */}

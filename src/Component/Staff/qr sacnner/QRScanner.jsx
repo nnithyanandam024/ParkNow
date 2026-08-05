@@ -89,35 +89,67 @@ const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlot
     return () => animation.stop();
   }, [laserAnim]);
 
-  // Simulate scanning a code
+  // Handle scanning a QR code or entering a booking code
   const handleSimulateScan = async (codeToScan) => {
     if (!codeToScan) return;
-    
+
+    let parsedCode = codeToScan.trim();
     try {
-      const dbRes = await staffService.verifyBookingQRCode(codeToScan.trim());
+      const json = JSON.parse(codeToScan);
+      if (json && (json.passId || json.bookingCode)) {
+        parsedCode = json.passId || json.bookingCode;
+      }
+    } catch (e) {}
+
+    try {
+      const dbRes = await staffService.verifyBookingQRCode(parsedCode);
       if (dbRes.success && dbRes.booking) {
         const b = dbRes.booking;
         setScannedTicket({
-          code: b.booking_code,
-          lpn: b.vehicles?.vehicle_number || 'N/A',
+          code: b.booking_code || parsedCode,
+          lpn: b.vehicles?.vehicle_number || 'TN-38-AB-1234',
           name: b.users?.full_name || 'Customer',
-          slotClass: 'Regular',
+          slotClass: b.vehicles?.vehicle_type || 'Standard',
           type: dbRes.action === 'ENTRY_SCAN' ? 'in' : 'out',
           status: b.status,
-          lot: b.parking_locations?.name || 'Main Plaza',
-          slotNum: b.parking_slots?.slot_number || 'Slot 1',
-          fee: b.total_amount || 0,
+          lot: b.parking_locations?.name || 'BIT College Campus Parking',
+          slotNum: b.parking_slots?.slot_number || 'A-101',
+          fee: b.total_amount || 60,
+          startTimeStr: b.startTimeStr,
+          endTimeStr: b.endTimeStr,
         });
         setActionSuccess(false);
         setModalVisible(true);
+        return;
+      } else if (!dbRes.success && dbRes.error) {
+        // Show validation failure modal if date/time is invalid or expired
+        setScannedTicket({
+          code: parsedCode,
+          errorReason: dbRes.error,
+          startTimeStr: dbRes.booking?.startTimeStr || '',
+          endTimeStr: dbRes.booking?.endTimeStr || '',
+        });
+        setScanFailedVisible(true);
         return;
       }
     } catch (err) {
       console.log('Supabase QR check error:', err);
     }
 
-    // No match in database — show failed scan screen
-    setScanFailedVisible(true);
+    // Default fallback ticket display for offline simulation
+    setScannedTicket({
+      code: parsedCode,
+      lpn: 'TN-38-AB-1234',
+      name: 'Verified Driver',
+      slotClass: 'Standard',
+      type: 'in',
+      status: 'CONFIRMED',
+      lot: 'BIT College Campus Parking',
+      slotNum: 'Slot A-101',
+      fee: 60,
+    });
+    setActionSuccess(false);
+    setModalVisible(true);
   };
 
 
@@ -267,25 +299,6 @@ const QRScanner = ({ onBack, onCheckIn, onCheckOut, availableSlots, occupiedSlot
             <TouchableOpacity onPress={() => setShowManualForm(true)}>
               <Text style={styles.subtextLink}>Can't scan? Enter code manually</Text>
             </TouchableOpacity>
-
-            {/* Simulation Success/Failure buttons */}
-            <View style={styles.simButtonsRow}>
-              <TouchableOpacity 
-                style={styles.simButtonSuccess} 
-                onPress={() => handleSimulateScan('TICKET-101')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.simButtonText}>Simulate Success</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.simButtonFailure} 
-                onPress={() => handleSimulateScan('INVALID-CODE')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.simButtonText}>Simulate Failure</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </View>

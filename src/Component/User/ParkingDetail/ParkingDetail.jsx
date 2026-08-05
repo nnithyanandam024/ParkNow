@@ -58,14 +58,14 @@ const ParkingDetail = ({ parking, onBack, onReserve }) => {
     name: parking?.name || 'Parking Spot',
     rating: parking?.rating || 4.5,
     address: parking?.street
-      ? `${parking.street}, ${parking.city || 'New York, NY'}`
-      : parking?.address || '123 Park Ave, New York, NY',
-    distance: parking?.distance || '0.4 miles',
+      ? `${parking.street}, ${parking.city || 'Sathyamangalam, TN'}`
+      : parking?.address || 'BIT Campus, Sathyamangalam, TN',
+    distance: parking?.distance || '0.3 km',
     availableSlots: parking?.availableSlots || parking?.availability === 'Almost Full' ? 3 : 12,
-    rate: parking?.rate || 80,
+    rate: parking?.rate || 20,
     type: 'Hourly',
-    lat: parking?.lat || 40.7527,
-    lng: parking?.lng || -73.9772,
+    lat: parking?.lat || 11.4967,
+    lng: parking?.lng || 77.2764,
     ...parking,
   };
 

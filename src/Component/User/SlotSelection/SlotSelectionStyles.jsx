@@ -285,36 +285,39 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
 
-  /* ───── Selected Slot Details Panel ───── */
-  detailsPanel: {
-    width: '100%',
+  /* ───── Fixed Bottom Details Panel ───── */
+  fixedBottomPanel: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 88 : 68,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 18,
-    minHeight: 140,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    zIndex: 90,
     ...Platform.select({
       ios: {
         shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 3,
+        elevation: 12,
       },
     }),
   },
   detailsContent: {
-    flex: 1,
     justifyContent: 'space-between',
   },
   detailsHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   detailsSlotId: {
     fontSize: 20,
@@ -367,17 +370,16 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
   },
   detailsPlaceholder: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 10,
   },
   placeholderText: {
     fontSize: 13,
     color: '#64748B',
     fontWeight: '600',
     textAlign: 'center',
-    maxWidth: 260,
+    maxWidth: 280,
     lineHeight: 18,
   },
 });

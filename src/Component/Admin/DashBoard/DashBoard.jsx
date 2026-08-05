@@ -22,23 +22,28 @@ const DashBoard = ({ setActiveTab }) => {
     { id: '1', title: 'System Alert', message: 'Backup completed successfully.', time: '5m ago' },
     { id: '2', title: 'New Registration', message: 'Staff member John joined the team.', time: '1h ago' },
   ]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showBookingsModal, setShowBookingsModal] = useState(false);
-  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [showNotifications, setShowNotifications]   = useState(false);
+  const [showBookingsModal, setShowBookingsModal]   = useState(false);
+  const [showUsersModal, setShowUsersModal]         = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-  const [showLotsModal, setShowLotsModal] = useState(false);
+  const [showLotsModal, setShowLotsModal]           = useState(false);
+  const [showLogsModal, setShowLogsModal]           = useState(false);
+  const [logSearchQuery, setLogSearchQuery]         = useState('');
+  const [logFilter, setLogFilter]                   = useState('all'); // 'all' | 'entry' | 'exit' | 'failed'
 
-  // Live stats from Supabase
+  // DB Activity Logs state
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs]   = useState(true);
+
+  // Live stats from Supabase Table DB
   const [dashStats, setDashStats] = useState({
     totalLots: 0,
     totalSlots: 0,
     availableSlots: 0,
-    occupiedSlots: 0,
-    todaysBookings: 0,
     todaysRevenue: 0,
   });
 
-  // Fallback static data
+  // Modals Data
   const bookingsData = [
     { id: 'BK-9921', user: 'John Doe', slot: 'Lot A-102', time: '09:30 AM', status: 'Confirmed' },
     { id: 'BK-9922', user: 'Jane Smith', slot: 'Lot B-204', time: '10:15 AM', status: 'Pending' },
@@ -56,39 +61,141 @@ const DashBoard = ({ setActiveTab }) => {
   ];
 
   const lotsData = [
-    { id: 'L-A', name: 'Lot A - Plaza Center', totalSlots: 500, occupiedSlots: 412, status: 'Active' },
-    { id: 'L-B', name: 'Lot B - Waterfront', totalSlots: 600, occupiedSlots: 510, status: 'Active' },
-    { id: 'L-C', name: 'Lot C - Lincoln Hub', totalSlots: 440, occupiedSlots: 400, status: 'Maintenance' },
+    { id: 'L-A', name: 'Lot A - BIT Campus Main Lot', totalSlots: 161, occupiedSlots: 38, status: 'Active' },
+    { id: 'L-B', name: 'Lot B - BIT Annex Lot', totalSlots: 80, occupiedSlots: 24, status: 'Active' },
+    { id: 'L-C', name: 'Lot C - Executive Zone', totalSlots: 40, occupiedSlots: 10, status: 'Active' },
   ];
 
-  useEffect(() => {
-    async function loadDashboardStats() {
-      try {
-        const occupancyRes = await parkingService.getOccupancySummary();
-        if (occupancyRes.success && occupancyRes.data) {
-          const summary = occupancyRes.data.reduce(
-            (acc, loc) => ({
-              totalLots: acc.totalLots + 1,
-              totalSlots: acc.totalSlots + (loc.total_slots || 0),
-              availableSlots: acc.availableSlots + (loc.available_slots || 0),
-              occupiedSlots: acc.occupiedSlots + (loc.occupied_slots || 0),
-            }),
-            { totalLots: 0, totalSlots: 0, availableSlots: 0, occupiedSlots: 0 }
-          );
-          setDashStats(prev => ({ ...prev, ...summary }));
-        }
-      } catch (e) {
-        console.log('Dashboard stats load error:', e);
-      }
-    }
-    loadDashboardStats();
+  // ── 1. Load Live Stats & Revenue from Table DB ────────────────────────────
+  const loadDashboardStats = async () => {
+    try {
+      const { supabase } = await import('../../../config/supabase');
+      
+      // Fetch locations count
+      const { data: locs } = await supabase.from('parking_locations').select('location_id');
+      const totalLots = locs ? locs.length : 1;
 
-    // Real-time: refresh stats whenever slots or bookings change
+      // Fetch slots summary
+      const { data: slots } = await supabase.from('parking_slots').select('slot_id, status');
+      let totalSlots = 0;
+      let availableSlots = 0;
+      let occupiedSlots = 0;
+      if (slots && slots.length > 0) {
+        totalSlots = slots.length;
+        availableSlots = slots.filter((s) => s.status === 'AVAILABLE').length;
+        occupiedSlots = slots.filter((s) => s.status === 'OCCUPIED' || s.status === 'RESERVED').length;
+      }
+
+      // Fetch bookings count
+      const { data: bks } = await supabase.from('bookings').select('booking_id');
+      const todaysBookings = bks ? bks.length : 0;
+
+      // Fetch payments revenue
+      const { data: pmts } = await supabase.from('payments').select('amount');
+      const todaysRevenue = pmts ? pmts.reduce((acc, p) => acc + Number(p.amount || 0), 0) : 0;
+
+      setDashStats({
+        totalLots,
+        totalSlots: totalSlots || 161,
+        availableSlots,
+        occupiedSlots,
+        todaysBookings,
+        todaysRevenue,
+      });
+    } catch (e) {
+      console.log('Admin Dashboard stats load error:', e);
+    }
+  };
+
+  // ── 2. Load Live Verification Logs from Table DB ─────────────────────────
+  const fetchActivityLogs = async () => {
+    try {
+      const { supabase } = await import('../../../config/supabase');
+      
+      const { data: logs, error } = await supabase
+        .from('verification_logs')
+        .select(`
+          *,
+          bookings (
+            booking_code,
+            parking_slots (slot_number),
+            vehicles (vehicle_number),
+            users (full_name)
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(25);
+
+      if (!error && logs && logs.length > 0) {
+        const mapped = logs.map((l) => {
+          const dt = new Date(l.created_at || Date.now());
+          const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+          return {
+            id:       String(l.log_id),
+            lpn:      l.bookings?.vehicles?.vehicle_number || 'KA-01-AB-1234',
+            customer: l.bookings?.users?.full_name || 'Walk-in Customer',
+            code:     l.bookings?.booking_code || 'PN-BK-0000',
+            slotNum:  l.bookings?.parking_slots?.slot_number || 'A-101',
+            type:     l.action === 'ENTRY_SCAN' ? 'in' : 'out',
+            action:   l.action,
+            status:   l.status || 'SUCCESS',
+            details:  `Slot ${l.bookings?.parking_slots?.slot_number || 'A-101'} • ${timeStr}`,
+            fullTime: `${dateStr} • ${timeStr}`,
+            remarks:  l.remarks || 'Verification attempt logged',
+          };
+        });
+        setActivityLogs(mapped);
+      } else {
+        // Fallback to recent bookings if verification_logs is empty
+        const { data: recentBookings } = await supabase
+          .from('bookings')
+          .select('*, parking_slots(slot_number), vehicles(vehicle_number), users(full_name)')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (recentBookings && recentBookings.length > 0) {
+          const mapped = recentBookings.map((b) => {
+            const dt = new Date(b.created_at || Date.now());
+            const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+            return {
+              id:       String(b.booking_id),
+              lpn:      b.vehicles?.vehicle_number || 'TN-38-AB-1234',
+              customer: b.users?.full_name || 'Customer',
+              code:     b.booking_code,
+              slotNum:  b.parking_slots?.slot_number || 'A-101',
+              type:     'in',
+              action:   'ENTRY_SCAN',
+              status:   b.status === 'CONFIRMED' ? 'SUCCESS' : b.status,
+              details:  `Slot ${b.parking_slots?.slot_number || 'A-101'} • ${timeStr}`,
+              fullTime: `${dateStr} • ${timeStr}`,
+              remarks:  `Booking ${b.booking_code} created`,
+            };
+          });
+          setActivityLogs(mapped);
+        }
+      }
+    } catch (e) {
+      console.log('Admin fetchActivityLogs error:', e.message);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardStats();
+    fetchActivityLogs();
+
+    // Real-time: refresh stats & logs whenever slots, bookings or verification logs update
     const slotChannel = realtimeService.subscribeToSlots(1, () => {
       loadDashboardStats();
     });
     const bookingChannel = realtimeService.subscribeToBookings(() => {
       loadDashboardStats();
+      fetchActivityLogs();
     });
 
     return () => {
@@ -96,6 +203,25 @@ const DashBoard = ({ setActiveTab }) => {
       realtimeService.unsubscribe(bookingChannel);
     };
   }, []);
+
+  const getFilteredLogs = () => {
+    return activityLogs.filter((log) => {
+      const q = logSearchQuery.trim().toLowerCase();
+      const matchesSearch = !q || 
+        log.lpn.toLowerCase().includes(q) || 
+        log.customer.toLowerCase().includes(q) || 
+        log.code.toLowerCase().includes(q) || 
+        log.slotNum.toLowerCase().includes(q) ||
+        log.remarks.toLowerCase().includes(q);
+
+      let matchesFilter = true;
+      if (logFilter === 'entry') matchesFilter = log.type === 'in';
+      else if (logFilter === 'exit') matchesFilter = log.type === 'out';
+      else if (logFilter === 'failed') matchesFilter = log.status !== 'SUCCESS';
+
+      return matchesSearch && matchesFilter;
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -134,20 +260,16 @@ const DashBoard = ({ setActiveTab }) => {
         {/* Performance Overview */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Performance Overview</Text>
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>Live</Text>
-          </View>
         </View>
 
-        {/* Stats Grid */}
+        {/* Stats Grid (Live DB Metrics) */}
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
             {/* Card 1 - Total Lots */}
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Total Lots</Text>
+              <Text style={styles.statLabel}>Total Locations</Text>
               <View style={styles.statRowContent}>
-                <Text style={styles.statValue}>{dashStats.totalLots || 1}</Text>
+                <Text style={styles.statValue}>{dashStats.totalLots}</Text>
                 <FeatherIcon name="map" size={18} color="#6B7280" style={styles.statIcon} />
               </View>
             </View>
@@ -155,7 +277,7 @@ const DashBoard = ({ setActiveTab }) => {
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Total Slots</Text>
               <View style={styles.statRowContent}>
-                <Text style={styles.statValue}>{dashStats.totalSlots || 100}</Text>
+                <Text style={styles.statValue}>{dashStats.totalSlots}</Text>
                 <FeatherIcon name="grid" size={18} color="#6B7280" style={styles.statIcon} />
               </View>
             </View>
@@ -164,17 +286,17 @@ const DashBoard = ({ setActiveTab }) => {
           <View style={styles.statsRow}>
             {/* Card 3 - Available */}
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Available</Text>
+              <Text style={styles.statLabel}>Available Slots</Text>
               <View style={styles.statRowContent}>
                 <Text style={[styles.statValue, { color: '#10B981' }]}>{dashStats.availableSlots}</Text>
                 <View style={styles.changeBadge}>
-                  <Text style={styles.changeText}>+4%</Text>
+                  <Text style={styles.changeText}>Free</Text>
                 </View>
               </View>
             </View>
             {/* Card 4 - Occupied */}
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Occupied</Text>
+              <Text style={styles.statLabel}>Occupied / Reserved</Text>
               <View style={styles.statRowContent}>
                 <Text style={[styles.statValue, { color: '#1A5FB4' }]}>{dashStats.occupiedSlots}</Text>
                 <View style={styles.progressContainer}>
@@ -185,20 +307,20 @@ const DashBoard = ({ setActiveTab }) => {
           </View>
 
           <View style={styles.statsRow}>
-            {/* Card 5 - Today's Bookings */}
+            {/* Card 5 - Total Bookings */}
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Today's Bookings</Text>
+              <Text style={styles.statLabel}>Total Bookings</Text>
               <View style={styles.statRowContent}>
-                <Text style={styles.statValue}>456</Text>
+                <Text style={styles.statValue}>{dashStats.todaysBookings}</Text>
                 <FeatherIcon name="calendar" size={18} color="#6B7280" style={styles.statIcon} />
               </View>
             </View>
-            {/* Card 6 - Today's Revenue */}
+            {/* Card 6 - Total Revenue */}
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Today's Revenue</Text>
+              <Text style={styles.statLabel}>Total Revenue</Text>
               <View style={styles.statRowContent}>
-                <Text style={styles.statValue}>$5,240</Text>
-                <FeatherIcon name="credit-card" size={18} color="#6B7280" style={styles.statIcon} />
+                <Text style={[styles.statValue, { color: '#16A34A' }]}>₹{dashStats.todaysRevenue}</Text>
+                <FeatherIcon name="credit-card" size={18} color="#16A34A" style={styles.statIcon} />
               </View>
             </View>
           </View>
@@ -274,52 +396,228 @@ const DashBoard = ({ setActiveTab }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Recent Activity */}
+        {/* Recent Activity (Live Table DB Integrated) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity onPress={() => Alert.alert('History', 'Viewing all older activities.')}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0052cc' }}>View All</Text>
+          <TouchableOpacity onPress={() => setShowLogsModal(true)} activeOpacity={0.7}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#0052cc' }}>View All Logs ({activityLogs.length})</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.activityCard}>
-          {/* Activity 1 */}
-          <View style={styles.activityRow}>
-            <View style={[styles.activityIconCircle, { backgroundColor: '#DCFCE7' }]}>
-              <FeatherIcon name="check-circle" size={18} color="#16A34A" />
-            </View>
-            <View style={styles.activityTextCol}>
-              <Text style={styles.activityTitle}>John Doe - Lot A-102</Text>
-              <Text style={styles.activitySubtitle}>New booking confirmed</Text>
-            </View>
-            <Text style={styles.activityTime}>2 mins ago</Text>
-          </View>
+          {activityLogs.slice(0, 5).map((act, idx) => {
+            const isEntry = act.type === 'in' || act.action === 'ENTRY_SCAN';
+            const isFailed = act.status === 'EXPIRED' || act.status === 'FAILED' || act.status === 'REJECTED';
 
-          {/* Activity 2 */}
-          <View style={styles.activityRow}>
-            <View style={[styles.activityIconCircle, { backgroundColor: '#EFF6FF' }]}>
-              <FeatherIcon name="dollar-sign" size={18} color="#0052cc" />
-            </View>
-            <View style={styles.activityTextCol}>
-              <Text style={styles.activityTitle}>₹150.00 collected - Lot B-05</Text>
-              <Text style={styles.activitySubtitle}>Payment successful</Text>
-            </View>
-            <Text style={styles.activityTime}>10 mins ago</Text>
-          </View>
+            let iconBg    = isEntry ? '#DCFCE7' : '#DBEAFE';
+            let iconClr   = isEntry ? '#16A34A' : '#2563EB';
+            let statusTxt = isEntry ? 'Checked In' : 'Checked Out';
+            let badgeBg   = isEntry ? '#DCFCE7' : '#DBEAFE';
+            let badgeClr  = isEntry ? '#15803D' : '#1D64C6';
 
-          {/* Activity 3 */}
-          <View style={[styles.activityRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.activityIconCircle, { backgroundColor: '#FEF3C7' }]}>
-              <FeatherIcon name="tool" size={18} color="#D97706" />
+            if (isFailed) {
+              iconBg    = '#FEE2E2';
+              iconClr   = '#EF4444';
+              badgeBg   = '#FEE2E2';
+              badgeClr  = '#B91C1C';
+              statusTxt = act.status === 'EXPIRED' ? 'Expired Pass' : 'Scan Failed';
+            }
+
+            return (
+              <View 
+                key={act.id} 
+                style={[
+                  styles.activityRow,
+                  idx === activityLogs.slice(0, 5).length - 1 && { borderBottomWidth: 0 }
+                ]}
+              >
+                <View style={[styles.activityIconCircle, { backgroundColor: iconBg }]}>
+                  <FeatherIcon 
+                    name={isFailed ? 'alert-triangle' : isEntry ? 'log-in' : 'log-out'} 
+                    size={16} 
+                    color={iconClr} 
+                  />
+                </View>
+                <View style={styles.activityTextCol}>
+                  <Text style={styles.activityTitle}>{act.lpn} ({act.customer})</Text>
+                  <Text style={styles.activitySubtitle}>Code: {act.code} • Slot: {act.slotNum}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <View style={{ backgroundColor: badgeBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginBottom: 2 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: badgeClr }}>{statusTxt}</Text>
+                  </View>
+                  <Text style={styles.activityTime}>{act.details.split(' • ')[1] || 'Just Now'}</Text>
+                </View>
+              </View>
+            );
+          })}
+
+          {activityLogs.length === 0 && (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: '#94A3B8', fontSize: 13 }}>No recent activity logged in DB.</Text>
             </View>
-            <View style={styles.activityTextCol}>
-              <Text style={styles.activityTitle}>Marcus Chen updated Lot C</Text>
-              <Text style={styles.activitySubtitle}>Status: Maintenance</Text>
-            </View>
-            <Text style={styles.activityTime}>30 mins ago</Text>
-          </View>
+          )}
         </View>
       </ScrollView>
+
+      {/* ── Admin Activity & Audit Logs Modal ───────────────────────────────── */}
+      <Modal
+        visible={showLogsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowLogsModal(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.65)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setShowLogsModal(false)}
+        >
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              height: '85%',
+              padding: 20,
+            }}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Modal Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <View>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: '#0F172A' }}>Admin System Audit Logs</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                  Live Supabase Database Logs ({getFilteredLogs().length} records)
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowLogsModal(false)}>
+                <FeatherIcon name="x" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Filter Pills */}
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+              {[
+                { key: 'all',    label: 'All Logs' },
+                { key: 'entry',  label: 'Entry' },
+                { key: 'exit',   label: 'Exit' },
+                { key: 'failed', label: 'Failed' },
+              ].map((f) => (
+                <TouchableOpacity
+                  key={f.key}
+                  onPress={() => setLogFilter(f.key)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                    borderRadius: 12,
+                    backgroundColor: logFilter === f.key ? '#0052cc' : '#EFF6FF',
+                    borderWidth: 1,
+                    borderColor: logFilter === f.key ? '#003d99' : '#BFDBFE',
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: logFilter === f.key ? '#fff' : '#0052cc' }}>
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Scrollable Log Rows */}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {getFilteredLogs().map((item) => {
+                const isEntry = item.type === 'in' || item.action === 'ENTRY_SCAN';
+                const isFailed = item.status === 'EXPIRED' || item.status === 'FAILED' || item.status === 'REJECTED';
+
+                let iconBg    = isEntry ? '#DCFCE7' : '#DBEAFE';
+                let iconClr   = isEntry ? '#16A34A' : '#2563EB';
+                let badgeBg   = isEntry ? '#DCFCE7' : '#DBEAFE';
+                let badgeClr  = isEntry ? '#15803D' : '#1D64C6';
+                let statusTxt = isEntry ? 'Checked In' : 'Checked Out';
+
+                if (isFailed) {
+                  iconBg    = '#FEE2E2';
+                  iconClr   = '#EF4444';
+                  badgeBg   = '#FEE2E2';
+                  badgeClr  = '#B91C1C';
+                  statusTxt = item.status === 'EXPIRED' ? 'Expired Pass' : 'Scan Failed';
+                }
+
+                return (
+                  <View
+                    key={item.id}
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0',
+                      padding: 14,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 15,
+                            backgroundColor: iconBg,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 8,
+                          }}
+                        >
+                          <FeatherIcon
+                            name={isFailed ? 'alert-triangle' : isEntry ? 'log-in' : 'log-out'}
+                            size={15}
+                            color={iconClr}
+                          />
+                        </View>
+                        <View>
+                          <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F172A' }}>{item.lpn}</Text>
+                          <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{item.customer}</Text>
+                        </View>
+                      </View>
+                      <View
+                        style={{
+                          backgroundColor: badgeBg,
+                          paddingHorizontal: 10,
+                          paddingVertical: 3,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: '800',
+                            color: badgeClr,
+                          }}
+                        >
+                          {statusTxt}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={{ fontSize: 12, color: '#475569', fontWeight: '600', marginBottom: 4 }}>
+                      Code: <Text style={{ color: '#0052cc', fontWeight: '800' }}>{item.code}</Text> • Slot: <Text style={{ fontWeight: '800', color: '#0F172A' }}>{item.slotNum}</Text>
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#64748B' }}>{item.remarks}</Text>
+                    <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 4, textAlign: 'right' }}>
+                      {item.fullTime}
+                    </Text>
+                  </View>
+                );
+              })}
+              {getFilteredLogs().length === 0 && (
+                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                  <FeatherIcon name="inbox" size={32} color="#CBD5E1" />
+                  <Text style={{ marginTop: 10, color: '#94A3B8', fontSize: 13 }}>No verification log entries found.</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Notifications Modal */}
       <Modal visible={showNotifications} animationType="slide" transparent>

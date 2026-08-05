@@ -1,4 +1,4 @@
-import { StyleSheet, Platform, Dimensions } from 'react-native';
+import { StyleSheet, Platform, Dimensions, StatusBar } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
@@ -6,22 +6,32 @@ const CARD_WIDTH = width * 0.75;
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E2E8F0',
   },
 
-  /* ───── Map ───── */
+  /* ───── Map View ───── */
   map: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E2E8F0',
+    zIndex: 1,
   },
 
-  /* ───── Floating Header Overlay ───── */
+  /* ───── Floating Top Header Overlay ───── */
   headerOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
-    paddingTop: Platform.OS === 'android' ? 36 : (Platform.OS === 'ios' ? 44 : 0),
+    zIndex: 40,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 8 : 44,
     backgroundColor: 'transparent',
   },
   headerRow: {
@@ -50,158 +60,127 @@ export const styles = StyleSheet.create({
       ios: {
         shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
+        shadowOpacity: 0.06,
         shadowRadius: 6,
       },
       android: {
-        elevation: 2,
+        elevation: 3,
       },
     }),
   },
-  greeting: {
-    fontSize: 16,
+  headerSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  headerTitle: {
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  locationText: {
-    fontSize: 12,
-    color: '#0052cc',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  avatarContainer: {},
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#EFF6FF',
+  searchBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-  },
-
-  /* ───── Search Bar ───── */
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     ...Platform.select({
       ios: {
         shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
       },
       android: {
         elevation: 3,
       },
     }),
-    marginBottom: 12,
-  },
-  searchPlaceholder: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 14,
-    color: '#94A3B8',
-    fontWeight: '500',
   },
 
-  /* ───── Filter Chips ───── */
-  filtersContainer: {
+  /* ───── Filter Chips Scroll ───── */
+  filterScroll: {
     paddingHorizontal: 20,
-    paddingBottom: 8,
-    gap: 8,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   filterChipActive: {
     backgroundColor: '#0052cc',
     borderColor: '#0052cc',
   },
-  filterIcon: {
-    marginRight: 6,
-  },
-  filterText: {
+  filterChipText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#64748B',
   },
-  filterTextActive: {
+  filterChipTextActive: {
     color: '#FFFFFF',
   },
 
-  /* ───── Price Markers ───── */
-  markerContainer: {
+  /* ───── Floating My Location Button ───── */
+  myLocationBtn: {
+    position: 'absolute',
+    right: 18,
+    bottom: Platform.OS === 'ios' ? 280 : 270,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  markerBubble: {
-    backgroundColor: '#0052cc',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 35,
     ...Platform.select({
       ios: {
-        shadowColor: '#0052cc',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 5,
       },
     }),
   },
-  markerPrice: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  markerArrow: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: '#0052cc',
-    marginTop: -1,
-  },
 
-  /* ───── Bottom Cards ───── */
-  cardsContainer: {
+  /* ───── Bottom Parking Cards Overlay ───── */
+  cardsOverlay: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 98 : 78,
+    bottom: Platform.OS === 'ios' ? 95 : 85,
     left: 0,
     right: 0,
-    zIndex: 10,
+    zIndex: 30,
   },
-  cardsList: {
+  cardsScroll: {
     paddingHorizontal: 20,
+    paddingBottom: 8,
   },
-  card: {
-    width: CARD_WIDTH,
+  spotCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
@@ -212,104 +191,82 @@ export const styles = StyleSheet.create({
       ios: {
         shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  cardTitle: {
+  spotName: {
     fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 2,
+    maxWidth: width * 0.48,
+  },
+  spotMeta: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DCFCE7',
+    backgroundColor: '#FEF9C3',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: '#FEF08A',
   },
   ratingText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#16A34A',
-    marginLeft: 3,
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardMetaText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '600',
-    marginLeft: 5,
+    color: '#A16207',
   },
   cardDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginBottom: 12,
+    marginVertical: 10,
   },
   cardFooter: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  cardStat: {
-    flex: 1,
-  },
-  cardStatLabel: {
-    fontSize: 10,
+  priceText: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    color: '#0052cc',
   },
-  cardStatValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
+  slotsAvailable: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#16A34A',
+    marginTop: 2,
   },
-  cardStatUnit: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  cardStatDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#F1F5F9',
-    marginHorizontal: 16,
-  },
-
-  /* ───── Card Action Buttons ───── */
   cardActions: {
     flexDirection: 'row',
-    marginTop: 14,
-    gap: 10,
+    alignItems: 'center',
+    gap: 8,
   },
   detailsBtn: {
-    flex: 1,
-    height: 40,
+    paddingHorizontal: 14,
+    height: 38,
     borderWidth: 1.5,
     borderColor: '#0052cc',
-    borderRadius: 20,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   detailsBtnText: {
     fontSize: 13,
@@ -317,17 +274,17 @@ export const styles = StyleSheet.create({
     color: '#0052cc',
   },
   reserveBtn: {
-    flex: 1,
-    height: 40,
+    paddingHorizontal: 16,
+    height: 38,
     backgroundColor: '#0052cc',
-    borderRadius: 20,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#0052cc',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.2,
         shadowRadius: 6,
       },
       android: {
